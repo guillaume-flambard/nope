@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOPE. — Just say nope.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #09090B; --surface: #18181B; --surface-2: #1E1E23;
+    --border: #27272A; --border-lite: #3F3F46;
+    --text: #FAFAFA; --text-muted: #A1A1AA; --text-dim: #71717A;
+    --green: #B5FF4A; --green-dim: #8BCC35; --green-bg: rgba(181,255,74,0.08); --green-glow: rgba(181,255,74,0.25);
+    --rose: #FF4A6E; --rose-bg: rgba(255,74,110,0.08);
+    --cyan: #4AF0FF; --cyan-bg: rgba(74,240,255,0.08);
+    --amber: #FBBF24;
+    --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--sans); background:var(--black); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+  /* ── Layout ── */
+  .app { max-width:720px; margin:0 auto; padding:2rem 1.5rem; }
+
+  /* ── Header ── */
+  header { text-align:center; margin-bottom:2.5rem; }
+  .logo { font-family:var(--mono); font-weight:800; font-size:2.5rem; color:var(--green); letter-spacing:-0.03em; }
+  .logo span { color:var(--text-dim); }
+  .tagline { color:var(--text-muted); font-size:0.9rem; margin-top:0.25rem; }
+  .mode-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--green-bg); border:1px solid rgba(181,255,74,0.15);
+    padding:4px 12px; border-radius:100px; font-family:var(--mono);
+    font-size:0.7rem; color:var(--green); margin-top:0.75rem;
+  }
+  .mode-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  /* ── Input Area ── */
+  .input-area {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; padding:1.25rem; margin-bottom:1.5rem;
+    transition:border-color 0.2s;
+  }
+  .input-area:focus-within { border-color:var(--green); box-shadow:0 0 0 3px var(--green-bg); }
+
+  .input-row { display:flex; gap:0.75rem; }
+  #goal-input {
+    flex:1; background:transparent; border:none; color:var(--text);
+    font-family:var(--sans); font-size:1rem; outline:none;
+    padding:0.5rem 0;
+  }
+  #goal-input::placeholder { color:var(--text-dim); }
+
+  #send-btn {
+    background:var(--green); color:var(--black); border:none;
+    border-radius:10px; padding:0.5rem 1.25rem; font-family:var(--mono);
+    font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s;
+    white-space:nowrap;
+  }
+  #send-btn:hover { background:#c8ff6d; transform:translateY(-1px); box-shadow:0 4px 20px var(--green-glow); }
+  #send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .quick-actions { display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap; }
+  .quick-btn {
+    background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text-muted); padding:6px 14px; border-radius:100px;
+    font-size:0.78rem; cursor:pointer; transition:all 0.2s;
+    font-family:var(--sans);
+  }
+  .quick-btn:hover { border-color:var(--border-lite); color:var(--text); background:var(--border); }
+
+  /* ── Call Panel ── */
+  .call-panel {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; overflow:hidden; display:none;
+    animation:slideUp 0.3s ease-out;
+  }
+  .call-panel.active { display:block; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+
+  .call-header {
+    padding:1rem 1.25rem; display:flex; align-items:center;
+    justify-content:space-between; border-bottom:1px solid var(--border);
+  }
+  .call-status { display:flex; align-items:center; gap:8px; }
+  .status-dot { width:8px; height:8px; border-radius:50%; }
+  .status-dot.preparing { background:var(--amber); animation:blink 1s infinite; }
+  .status-dot.dialing { background:var(--cyan); animation:blink 0.5s infinite; }
+  .status-dot.ivr { background:var(--amber); animation:blink 1s infinite; }
+  .status-dot.holding { background:var(--amber); animation:blink 2s infinite; }
+  .status-dot.talking { background:var(--green); animation:blink 1.5s infinite; }
+  .status-dot.negotiating { background:var(--rose); animation:blink 1s infinite; }
+  .status-dot.success { background:var(--green); }
+  .status-dot.failed { background:var(--rose); }
+  .status-dot.ended { background:var(--text-dim); }
+
+  .status-text { font-family:var(--mono); font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; }
+  .call-timer { font-family:var(--mono); font-size:0.8rem; color:var(--text-dim); }
+
+  /* Transcript */
+  .transcript {
+    padding:1rem 1.25rem; max-height:400px; overflow-y:auto;
+    scroll-behavior:smooth;
+  }
+  .transcript::-webkit-scrollbar { width:4px; }
+  .transcript::-webkit-scrollbar-thumb { background:var(--border-lite); border-radius:4px; }
+
+  .msg { padding:0.5rem 0; animation:fadeIn 0.3s ease-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateX(-5px);} to{opacity:1;transform:translateX(0);} }
+
+  .msg-label {
+    font-family:var(--mono); font-size:0.65rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.1em; margin-bottom:2px;
+  }
+  .msg-label.nope { color:var(--green); }
+  .msg-label.agent { color:var(--rose); }
+  .msg-label.ivr { color:var(--amber); }
+  .msg-label.system { color:var(--cyan); }
+
+  .msg-text { font-size:0.9rem; color:var(--text-muted); line-height:1.5; }
+  .msg-action {
+    font-family:var(--mono); font-size:0.7rem; color:var(--text-dim);
+    background:var(--surface-2); padding:2px 8px; border-radius:4px;
+    display:inline-block; margin-top:4px;
+  }
+
+  /* ── Result Panel ── */
+  .result-panel {
+    display:none; background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; padding:1.5rem; margin-top:1rem;
+    animation:slideUp 0.3s ease-out;
+  }
+  .result-panel.active { display:block; }
+  .result-panel.success { border-color:rgba(181,255,74,0.3); }
+  .result-panel.failed { border-color:rgba(255,74,110,0.3); }
+
+  .result-icon { font-size:2rem; margin-bottom:0.5rem; }
+  .result-title { font-family:var(--mono); font-weight:700; font-size:1.1rem; margin-bottom:0.5rem; }
+  .result-summary { color:var(--text-muted); font-size:0.9rem; line-height:1.5; margin-bottom:1rem; }
+
+  .result-stats { display:flex; gap:1.5rem; flex-wrap:wrap; }
+  .stat { text-align:center; }
+  .stat-value { font-family:var(--mono); font-weight:700; font-size:1.2rem; color:var(--green); }
+  .stat-label { font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; }
+
+  .new-call-btn {
+    margin-top:1.25rem; background:transparent; border:1px solid var(--border-lite);
+    color:var(--text-muted); padding:0.6rem 1.5rem; border-radius:8px;
+    font-family:var(--mono); font-size:0.8rem; cursor:pointer; transition:all 0.2s;
+  }
+  .new-call-btn:hover { border-color:var(--text-dim); color:var(--text); }
+
+  /* ── Examples ── */
+  .examples { margin-top:2rem; }
+  .examples-title { font-family:var(--mono); font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem; }
+  .examples-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0.75rem; }
+  .example-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:1rem; cursor:pointer; transition:all 0.2s;
+  }
+  .example-card:hover { border-color:var(--border-lite); transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,0.3); }
+  .example-emoji { font-size:1.3rem; margin-bottom:0.5rem; }
+  .example-text { font-size:0.85rem; color:var(--text-muted); line-height:1.4; }
+  .example-tag { font-family:var(--mono); font-size:0.65rem; color:var(--green); margin-top:0.5rem; display:inline-block; }
+
+  /* ── Footer ── */
+  footer { text-align:center; margin-top:3rem; padding:1rem 0; border-top:1px solid var(--border); }
+  footer p { font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); }
+  footer a { color:var(--text-muted); text-decoration:none; }
+  footer a:hover { color:var(--green); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">NOPE<span>.</span></div>
+    <div class="tagline">AI that calls companies so you don't have to.</div>
+    <div class="mode-badge"><span class="mode-dot"></span> <span id="mode-label">Simulation Mode</span></div>
+  </header>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-row">
+      <input type="text" id="goal-input" placeholder='Try: "Cancel my Netflix subscription"' autocomplete="off" />
+      <button id="send-btn" onclick="startCall()">NOPE it</button>
+    </div>
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="setGoal('Cancel my Netflix subscription')">Cancel Netflix</button>
+      <button class="quick-btn" onclick="setGoal('Résilie mon abonnement Canal+')">Résilie Canal+</button>
+      <button class="quick-btn" onclick="setGoal('Negotiate my Comcast bill')">Negotiate Comcast</button>
+      <button class="quick-btn" onclick="setGoal('Baisse ma facture SFR')">Négocie SFR</button>
+    </div>
+  </div>
+
+  <!-- Call Panel -->
+  <div class="call-panel" id="call-panel">
+    <div class="call-header">
+      <div class="call-status">
+        <div class="status-dot preparing" id="status-dot"></div>
+        <span class="status-text" id="status-text">Preparing...</span>
+      </div>
+      <span class="call-timer" id="call-timer">00:00</span>
+    </div>
+    <div class="transcript" id="transcript"></div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-panel" id="result-panel">
+    <div class="result-icon" id="result-icon"></div>
+    <div class="result-title" id="result-title"></div>
+    <div class="result-summary" id="result-summary"></div>
+    <div class="result-stats" id="result-stats"></div>
+    <button class="new-call-btn" onclick="resetUI()">New call</button>
+  </div>
+
+  <!-- Examples -->
+  <div class="examples" id="examples">
+    <div class="examples-title">// what can nope do?</div>
+    <div class="examples-grid">
+      <div class="example-card" onclick="setGoal('Cancel my Netflix subscription')">
+        <div class="example-emoji">📺</div>
+        <div class="example-text">Cancel streaming subscriptions</div>
+        <div class="example-tag">cancel</div>
+      </div>
+      <div class="example-card" onclick="setGoal('Negotiate my internet bill with Comcast')">
+        <div class="example-emoji">💰</div>
+        <div class="example-text">Negotiate your bills down</div>
+        <div class="example-tag">negotiate</div>
+      </div>
+      <div class="example-card" onclick="setGoal('Résilie mon abonnement SFR')">
+        <div class="example-emoji">📱</div>
+        <div class="example-text">Résilie un forfait téléphone</div>
+        <div class="example-tag">résiliation</div>
+      </div>
+      <div class="example-card" onclick="setGoal('File a complaint about my last order')">
+        <div class="example-emoji">📋</div>
+        <div class="example-text">File complaints & get refunds</div>
+        <div class="example-tag">complain</div>
+      </div>
+      <div class="example-card" onclick="setGoal('Négocie ma facture EDF')">
+        <div class="example-emoji">⚡</div>
+        <div class="example-text">Négocie ta facture énergie</div>
+        <div class="example-tag">négociation</div>
+      </div>
+      <div class="example-card" onclick="setGoal('Cancel my Adobe Creative Cloud')">
+        <div class="example-emoji">🎨</div>
+        <div class="example-text">Cancel software subscriptions</div>
+        <div class="example-tag">cancel</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>
+      <a href="https://github.com/nope-ai/nope">NOPE.</a> v0.1.0 · Open source (MIT) ·
+      Built by humans who hate hold music
+    </p>
+  </footer>
+</div>
+
+<script>
+  let currentCallId = null;
+  let eventSource = null;
+  let timerInterval = null;
+  let startTime = null;
+
+  function setGoal(text) {
+    document.getElementById('goal-input').value = text;
+    document.getElementById('goal-input').focus();
+  }
+
+  async function startCall() {
+    const input = document.getElementById('goal-input');
+    const goal = input.value.trim();
+    if (!goal) return;
+
+    // Reset UI
+    document.getElementById('call-panel').classList.add('active');
+    document.getElementById('result-panel').classList.remove('active');
+    document.getElementById('examples').style.display = 'none';
+    document.getElementById('transcript').innerHTML = '';
+    document.getElementById('send-btn').disabled = true;
+
+    // Start timer
+    startTime = Date.now();
+    timerInterval = setInterval(updateTimer, 1000);
+
+    try {
+      const resp = await fetch('/api/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, simulate: true }),
+      });
+      const data = await resp.json();
+      currentCallId = data.callId;
+
+      // Connect SSE
+      eventSource = new EventSource(`/api/call/${currentCallId}/stream`);
+      eventSource.onmessage = (e) => {
+        const event = JSON.parse(e.data);
+        handleEvent(event);
+      };
+      eventSource.onerror = () => {
+        if (eventSource) eventSource.close();
+      };
+    } catch (err) {
+      addMessage('system', 'Connection error: ' + err.message);
+      document.getElementById('send-btn').disabled = false;
+    }
+  }
+
+  function handleEvent(event) {
+    switch (event.type) {
+      case 'status':
+        updateStatus(event.data.status);
+        break;
+      case 'transcript':
+        addMessage(event.data.speaker, event.data.text, event.data.action);
+        break;
+      case 'result':
+        showResult(event.data);
+        break;
+      case 'error':
+        addMessage('system', '⚠ ' + event.data.message);
+        break;
+    }
+  }
+
+  function updateStatus(status) {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    dot.className = 'status-dot ' + status;
+    const labels = {
+      preparing: 'Preparing...', dialing: 'Dialing...', ivr: 'Navigating menu...',
+      holding: 'On hold...', talking: 'Talking to agent', negotiating: 'Negotiating...',
+      success: 'Success!', failed: 'Failed', ended: 'Call ended'
+    };
+    text.textContent = labels[status] || status;
+  }
+
+  function addMessage(speaker, text, action) {
+    const transcript = document.getElementById('transcript');
+    const msg = document.createElement('div');
+    msg.className = 'msg';
+    msg.innerHTML = `
+      <div class="msg-label ${speaker}">${speaker.toUpperCase()}</div>
+      <div class="msg-text">${escapeHtml(text)}</div>
+      ${action ? `<span class="msg-action">${escapeHtml(action)}</span>` : ''}
+    `;
+    transcript.appendChild(msg);
+    transcript.scrollTop = transcript.scrollHeight;
+  }
+
+  function showResult(data) {
+    clearInterval(timerInterval);
+    if (eventSource) { eventSource.close(); eventSource = null; }
+
+    const panel = document.getElementById('result-panel');
+    const isSuccess = data.status === 'success';
+
+    panel.className = `result-panel active ${isSuccess ? 'success' : 'failed'}`;
+    document.getElementById('result-icon').textContent = isSuccess ? '✓' : '✗';
+    document.getElementById('result-title').textContent = isSuccess ? 'Nope did it.' : 'Didn\'t work this time.';
+    document.getElementById('result-title').style.color = isSuccess ? 'var(--green)' : 'var(--rose)';
+    document.getElementById('result-summary').textContent = data.summary || '';
+
+    const duration = data.duration || Math.round((Date.now() - startTime) / 1000);
+    const mins = Math.floor(duration / 60);
+    const secs = duration % 60;
+
+    let statsHTML = `
+      <div class="stat"><div class="stat-value">${mins}m ${secs}s</div><div class="stat-label">Duration</div></div>
+      <div class="stat"><div class="stat-value">$${(data.cost?.total || 0).toFixed(3)}</div><div class="stat-label">Cost</div></div>
+    `;
+    if (data.savings) {
+      statsHTML += `<div class="stat"><div class="stat-value">${data.savings}%</div><div class="stat-label">Saved</div></div>`;
+    }
+    document.getElementById('result-stats').innerHTML = statsHTML;
+    document.getElementById('send-btn').disabled = false;
+  }
+
+  function resetUI() {
+    document.getElementById('call-panel').classList.remove('active');
+    document.getElementById('result-panel').classList.remove('active');
+    document.getElementById('examples').style.display = 'block';
+    document.getElementById('goal-input').value = '';
+    document.getElementById('goal-input').focus();
+    clearInterval(timerInterval);
+  }
+
+  function updateTimer() {
+    if (!startTime) return;
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const secs = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('call-timer').textContent = `${mins}:${secs}`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Enter key to send
+  document.getElementById('goal-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') startCall();
+  });
+
+  // Check health
+  fetch('/api/health').then(r => r.json()).then(data => {
+    document.getElementById('mode-label').textContent =
+      data.mode === 'simulation' ? 'Simulation Mode' : 'Live Mode';
+  }).catch(() => {});
+</script>
+
+</body>
+</html>

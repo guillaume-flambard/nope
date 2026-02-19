@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOPE. — Open-Source AI That Calls So You Don't Have To</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════
+     NOPE. — Direction Artistique / Brand System
+     ═══════════════════════════════════════════ */
+
+  :root {
+    /* ── Color Palette ── */
+    --black:       #09090B;
+    --black-soft:  #0F0F12;
+    --surface:     #18181B;
+    --surface-2:   #1E1E23;
+    --border:      #27272A;
+    --border-lite: #3F3F46;
+    --text:        #FAFAFA;
+    --text-muted:  #A1A1AA;
+    --text-dim:    #71717A;
+
+    /* Accent: Electric Lime — "The Rebel" */
+    --nope-green:     #B5FF4A;
+    --nope-green-dim: #8BCC35;
+    --nope-green-bg:  rgba(181, 255, 74, 0.08);
+    --nope-green-glow: rgba(181, 255, 74, 0.25);
+
+    /* Action: Rose — "The Kill Switch" */
+    --nope-rose:     #FF4A6E;
+    --nope-rose-dim: #CC3557;
+    --nope-rose-bg:  rgba(255, 74, 110, 0.08);
+
+    /* Info: Cyan */
+    --nope-cyan:     #4AF0FF;
+    --nope-cyan-dim: #35BCC8;
+
+    /* ── Typography ── */
+    --font-mono:  'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* ── Spacing ── */
+    --space-xs:  0.25rem;
+    --space-sm:  0.5rem;
+    --space-md:  1rem;
+    --space-lg:  1.5rem;
+    --space-xl:  2rem;
+    --space-2xl: 3rem;
+    --space-3xl: 4rem;
+    --space-4xl: 6rem;
+
+    /* ── Radius ── */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+  }
+
+  /* ── Reset ── */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--black);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Utility ── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-xl);
+  }
+
+  /* ═══════════════════
+     NAVIGATION
+     ═══════════════════ */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: var(--space-md) 0;
+    background: rgba(9, 9, 11, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: var(--font-mono);
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--nope-green);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--text-dim); }
+
+  .nav-links {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: center;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  .btn-github {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .btn-github:hover {
+    border-color: var(--border-lite);
+    background: var(--surface-2);
+  }
+
+  /* ═══════════════════
+     HERO
+     ═══════════════════ */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding-top: 80px;
+    position: relative;
+  }
+
+  /* Ambient glow */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background: radial-gradient(ellipse, var(--nope-green-glow) 0%, transparent 70%);
+    opacity: 0.3;
+    pointer-events: none;
+    animation: pulse 6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.2; transform: translateX(-50%) scale(1); }
+    50% { opacity: 0.35; transform: translateX(-50%) scale(1.05); }
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--nope-green-bg);
+    border: 1px solid rgba(181, 255, 74, 0.15);
+    padding: 0.375rem 1rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--nope-green);
+    margin-bottom: var(--space-xl);
+    animation: fadeInUp 0.8s ease-out;
+  }
+  .hero-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--nope-green);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero h1 {
+    font-family: var(--font-mono);
+    font-size: clamp(4rem, 12vw, 9rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    color: var(--text);
+    margin-bottom: var(--space-lg);
+    animation: fadeInUp 0.8s ease-out 0.1s both;
+  }
+  .hero h1 .accent { color: var(--nope-green); }
+
+  .hero-subtitle {
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto var(--space-2xl);
+    font-weight: 400;
+    line-height: 1.5;
+    animation: fadeInUp 0.8s ease-out 0.2s both;
+  }
+  .hero-subtitle strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Terminal Demo ── */
+  .terminal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    max-width: 680px;
+    width: 100%;
+    text-align: left;
+    overflow: hidden;
+    animation: fadeInUp 0.8s ease-out 0.35s both;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
+  }
+  .terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--black-soft);
+  }
+  .terminal-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .terminal-dot.red { background: #FF5F57; }
+  .terminal-dot.yellow { background: #FEBC2E; }
+  .terminal-dot.green { background: #28C840; }
+  .terminal-title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .terminal-body {
+    padding: var(--space-lg);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+
+  .line {
+    opacity: 0;
+    animation: typeLine 0.4s ease-out forwards;
+  }
+  .line:nth-child(1) { animation-delay: 1s; }
+  .line:nth-child(2) { animation-delay: 1.8s; }
+  .line:nth-child(3) { animation-delay: 2.8s; }
+  .line:nth-child(4) { animation-delay: 3.6s; }
+  .line:nth-child(5) { animation-delay: 4.4s; }
+  .line:nth-child(6) { animation-delay: 5.2s; }
+  .line:nth-child(7) { animation-delay: 6.0s; }
+  .line:nth-child(8) { animation-delay: 6.8s; }
+
+  @keyframes typeLine {
+    from { opacity: 0; transform: translateX(-5px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .prompt { color: var(--nope-green); }
+  .cmd { color: var(--text); }
+  .flag { color: var(--nope-cyan); }
+  .str { color: #FBBF24; }
+  .comment { color: var(--text-dim); }
+  .success { color: var(--nope-green); }
+  .info { color: var(--nope-cyan); }
+  .warn { color: #FBBF24; }
+  .fire { color: var(--nope-rose); }
+
+  /* ═══════════════════
+     FEATURES SECTION
+     ═══════════════════ */
+  .features {
+    padding: var(--space-4xl) 0;
+    position: relative;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--nope-green);
+    margin-bottom: var(--space-md);
+  }
+
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: var(--space-md);
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    max-width: 550px;
+    margin-bottom: var(--space-3xl);
+    line-height: 1.6;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-lg);
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card:hover {
+    border-color: var(--border-lite);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--nope-green), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: var(--space-md);
+    background: var(--nope-green-bg);
+    border: 1px solid rgba(181, 255, 74, 0.1);
+  }
+
+  .feature-card h3 {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: var(--space-sm);
+    letter-spacing: -0.01em;
+  }
+
+  .feature-card p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  /* ═══════════════════
+     HOW IT WORKS
+     ═══════════════════ */
+  .how-it-works {
+    padding: var(--space-4xl) 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-xl);
+    margin-top: var(--space-2xl);
+  }
+
+  .step {
+    text-align: center;
+    padding: var(--space-xl);
+    position: relative;
+  }
+
+  .step-number {
+    font-family: var(--font-mono);
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--surface-2);
+    line-height: 1;
+    margin-bottom: var(--space-md);
+    -webkit-text-stroke: 1px var(--border-lite);
+  }
+
+  .step h3 {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: var(--space-sm);
+  }
+
+  .step p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  /* Arrow between steps */
+  .step:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--border-lite);
+    font-size: 1.5rem;
+  }
+
+  /* ═══════════════════
+     COMPARISON TABLE
+     ═══════════════════ */
+  .comparison {
+    padding: var(--space-4xl) 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--space-2xl);
+    font-size: 0.9rem;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: var(--space-md) var(--space-lg);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comparison-table th {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .comparison-table th:first-child { color: var(--text-muted); }
+  .comparison-table th.nope-col {
+    color: var(--nope-green);
+    background: var(--nope-green-bg);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .comparison-table td { color: var(--text-muted); }
+  .comparison-table td.nope-col {
+    color: var(--text);
+    background: var(--nope-green-bg);
+    font-weight: 500;
+  }
+
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table tr:last-child td.nope-col {
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .check { color: var(--nope-green); font-weight: 700; }
+  .cross { color: var(--nope-rose); font-weight: 700; }
+
+  /* ═══════════════════
+     CTA / BOTTOM
+     ═══════════════════ */
+  .cta-section {
+    padding: var(--space-4xl) 0 var(--space-4xl);
+    text-align: center;
+    border-top: 1px solid var(--border);
+    position: relative;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, var(--nope-green-glow) 0%, transparent 70%);
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-family: var(--font-mono);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: var(--space-md);
+  }
+  .cta-section h2 .accent { color: var(--nope-green); }
+
+  .cta-section p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    margin-bottom: var(--space-2xl);
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--nope-green);
+    color: var(--black);
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    background: #c8ff6d;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px var(--nope-green-glow);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: transparent;
+    color: var(--text);
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--border-lite);
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover {
+    border-color: var(--text-dim);
+    background: var(--surface);
+  }
+
+  /* ═══════════════════
+     FOOTER
+     ═══════════════════ */
+  footer {
+    padding: var(--space-xl) 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  footer p {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+  footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+  footer a:hover { color: var(--nope-green); }
+
+  /* ═══════════════════
+     BRAND SPEC SECTION
+     ═══════════════════ */
+  .brand-spec {
+    padding: var(--space-4xl) 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .palette {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2xl);
+  }
+
+  .swatch {
+    flex: 1;
+    min-width: 140px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .swatch-color {
+    height: 80px;
+  }
+  .swatch-info {
+    padding: var(--space-sm) var(--space-md);
+    background: var(--surface);
+  }
+  .swatch-name {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .swatch-hex {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  .type-specimen {
+    margin-top: var(--space-2xl);
+  }
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-xl);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    min-width: 120px;
+  }
+  .type-sample-mono {
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+  .type-sample-sans {
+    font-family: var(--font-sans);
+    color: var(--text);
+  }
+
+  /* ═══════════════════
+     RESPONSIVE
+     ═══════════════════ */
+  @media (max-width: 768px) {
+    .steps {
+      grid-template-columns: 1fr;
+    }
+    .step:not(:last-child)::after {
+      content: '↓';
+      right: 50%;
+      top: auto;
+      bottom: -16px;
+      transform: translateX(50%);
+    }
+    .nav-links { display: none; }
+    .comparison-table { font-size: 0.8rem; }
+    .comparison-table th,
+    .comparison-table td { padding: var(--space-sm); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <div class="container">
+    <a href="#" class="logo">NOPE<span>.</span></a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#compare">Compare</a></li>
+      <li><a href="#brand">Brand</a></li>
+    </ul>
+    <a href="https://github.com/nope-ai/nope" class="btn-github">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      Star on GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="container" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Open Source · MIT License
+    </div>
+
+    <h1>NOPE<span class="accent">.</span></h1>
+
+    <p class="hero-subtitle">
+      AI that <strong>calls companies</strong> so you don't have to.<br>
+      Cancel, negotiate, complain — hands free.
+    </p>
+
+    <!-- Terminal Demo -->
+    <div class="terminal">
+      <div class="terminal-header">
+        <span class="terminal-dot red"></span>
+        <span class="terminal-dot yellow"></span>
+        <span class="terminal-dot green"></span>
+        <span class="terminal-title">nope — zsh</span>
+      </div>
+      <div class="terminal-body">
+        <div class="line">
+          <span class="prompt">$</span> <span class="cmd">npx</span> <span class="flag">nope</span> <span class="str">"Cancel my Netflix subscription"</span>
+        </div>
+        <div class="line"><br></div>
+        <div class="line">
+          <span class="info">⟐</span> <span class="comment">Finding Netflix customer service...</span>
+        </div>
+        <div class="line">
+          <span class="info">⟐</span> <span class="comment">Calling +1-844-505-2993...</span>
+        </div>
+        <div class="line">
+          <span class="warn">◉</span> <span class="comment">Navigating phone menu... "Press 2 for account"</span>
+        </div>
+        <div class="line">
+          <span class="warn">◉</span> <span class="comment">On hold — waiting for human agent...</span>
+        </div>
+        <div class="line">
+          <span class="fire">▸</span> <span class="comment">Talking to agent: requesting cancellation...</span>
+        </div>
+        <div class="line">
+          <span class="success">✓ Subscription cancelled.</span> <span class="comment">Duration: 4m 23s</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: var(--space-2xl); display: flex; gap: var(--space-md); flex-wrap: wrap; justify-content: center; animation: fadeInUp 0.8s ease-out 0.5s both;">
+      <a href="#" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        Get Started
+      </a>
+      <a href="#how" class="btn-secondary">See how it works</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURES ═══ -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-label">// capabilities</div>
+    <h2 class="section-title">You say what. Nope does how.</h2>
+    <p class="section-desc">
+      One sentence in natural language. Nope finds the number, navigates the phone menu, waits on hold, talks to the human, and gets it done.
+    </p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Auto-Discovery</h3>
+        <p>Give Nope a company name. It finds the right phone number automatically — no searching, no digging through websites.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>IVR Navigation</h3>
+        <p>Nope listens to phone menus, understands the options, and presses the right buttons to reach a human agent. Works in English, French, Spanish, German.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Smart Strategies</h3>
+        <p>Built-in negotiation tactics: anchoring, competitor mentions, silence pressure, retention resistance. Nope doesn't take no for an answer.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>100% Local</h3>
+        <p>Your data stays on your machine. No cloud. No account. No tracking. You own every recording, every transcript, every result.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Real-Time Stream</h3>
+        <p>Watch the entire call live — transcription, agent actions, negotiation moves. Full transparency via web dashboard or terminal.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🌍</div>
+        <h3>Community-Powered</h3>
+        <p>Add your carrier, your country, your language. Every contribution makes Nope smarter for everyone. MIT licensed, forever free.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="how-it-works" id="how">
+  <div class="container">
+    <div class="section-label">// workflow</div>
+    <h2 class="section-title">Three words. One call. Done.</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">01</div>
+        <h3>You type</h3>
+        <p>"Cancel my Canal+ subscription" — natural language, any language.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">02</div>
+        <h3>Nope calls</h3>
+        <p>Finds the number, dials, navigates the menu, waits on hold, talks to the human.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">03</div>
+        <h3>You're free</h3>
+        <p>Get a confirmation with full transcript. Average call: 4 minutes. Your time saved: 43 minutes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMPARISON ═══ -->
+<section class="comparison" id="compare">
+  <div class="container">
+    <div class="section-label">// why nope</div>
+    <h2 class="section-title">The open-source alternative.</h2>
+    <p class="section-desc">Pine AI charges you. Vibrato takes a cut. Nope is free, forever.</p>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="nope-col">NOPE.</th>
+          <th>Pine AI</th>
+          <th>Vibrato</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Price</td>
+          <td class="nope-col"><span class="check">Free (MIT)</span></td>
+          <td>Paid plans</td>
+          <td>% of savings</td>
+        </tr>
+        <tr>
+          <td>Open Source</td>
+          <td class="nope-col"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Data Privacy</td>
+          <td class="nope-col"><span class="check">100% local</span></td>
+          <td>Cloud</td>
+          <td>Cloud</td>
+        </tr>
+        <tr>
+          <td>Self-Hosted</td>
+          <td class="nope-col"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Custom Strategies</td>
+          <td class="nope-col"><span class="check">✓ Contribute yours</span></td>
+          <td>Fixed</td>
+          <td>Fixed</td>
+        </tr>
+        <tr>
+          <td>Multi-language</td>
+          <td class="nope-col"><span class="check">EN FR ES DE +</span></td>
+          <td>EN only</td>
+          <td>EN only</td>
+        </tr>
+        <tr>
+          <td>Transparency</td>
+          <td class="nope-col"><span class="check">Full transcript</span></td>
+          <td>Summary only</td>
+          <td>Summary only</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ BRAND SPEC ═══ -->
+<section class="brand-spec" id="brand">
+  <div class="container">
+    <div class="section-label">// direction artistique</div>
+    <h2 class="section-title">Brand System</h2>
+    <p class="section-desc">
+      The complete visual identity. Rebellious, hacker-chic, unmistakably open source.
+    </p>
+
+    <!-- Color Palette -->
+    <h3 style="font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: var(--space-md); color: var(--text-muted);">Color Palette</h3>
+    <div class="palette">
+      <div class="swatch">
+        <div class="swatch-color" style="background: #B5FF4A;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color: var(--nope-green);">Nope Green</div>
+          <div class="swatch-hex">#B5FF4A — Primary accent</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #FF4A6E;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color: var(--nope-rose);">Kill Rose</div>
+          <div class="swatch-hex">#FF4A6E — Destructive actions</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #4AF0FF;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name" style="color: var(--nope-cyan);">Signal Cyan</div>
+          <div class="swatch-hex">#4AF0FF — Info & links</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #09090B;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Void Black</div>
+          <div class="swatch-hex">#09090B — Background</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #18181B;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Surface</div>
+          <div class="swatch-hex">#18181B — Cards & panels</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typography -->
+    <h3 style="font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: var(--space-md); margin-top: var(--space-2xl); color: var(--text-muted);">Typography</h3>
+    <div class="type-specimen">
+      <div class="type-row">
+        <div class="type-label">Logo / Headings</div>
+        <div class="type-sample-mono" style="font-size: 2rem; font-weight: 800; letter-spacing: -0.03em;">JetBrains Mono 800</div>
+      </div>
+      <div class="type-row">
+        <div class="type-label">Subheadings</div>
+        <div class="type-sample-mono" style="font-size: 1.2rem; font-weight: 600;">JetBrains Mono 600</div>
+      </div>
+      <div class="type-row">
+        <div class="type-label">Body</div>
+        <div class="type-sample-sans" style="font-size: 1rem; font-weight: 400;">Inter — Clean, readable, modern. The workhorse.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-label">Code / Terminal</div>
+        <div class="type-sample-mono" style="font-size: 0.9rem; font-weight: 400;">JetBrains Mono 400 — $ npx nope "do the thing"</div>
+      </div>
+    </div>
+
+    <!-- Logo Variations -->
+    <h3 style="font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: var(--space-md); margin-top: var(--space-2xl); color: var(--text-muted);">Logo Treatments</h3>
+    <div style="display: flex; gap: var(--space-xl); flex-wrap: wrap; align-items: center;">
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-2xl) var(--space-3xl); text-align: center;">
+        <div style="font-family: var(--font-mono); font-weight: 800; font-size: 3rem; letter-spacing: -0.03em; color: var(--nope-green);">NOPE<span style="color: var(--text-dim);">.</span></div>
+        <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: var(--space-sm); text-transform: uppercase; letter-spacing: 0.2em;">Primary — on dark</div>
+      </div>
+      <div style="background: #FAFAFA; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-2xl) var(--space-3xl); text-align: center;">
+        <div style="font-family: var(--font-mono); font-weight: 800; font-size: 3rem; letter-spacing: -0.03em; color: #09090B;">NOPE<span style="color: #D4D4D8;">.</span></div>
+        <div style="font-family: var(--font-mono); font-size: 0.65rem; color: #71717A; margin-top: var(--space-sm); text-transform: uppercase; letter-spacing: 0.2em;">Inverse — on light</div>
+      </div>
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-2xl) var(--space-3xl); text-align: center;">
+        <div style="font-family: var(--font-mono); font-weight: 800; font-size: 3rem; letter-spacing: -0.03em;">
+          <span style="color: var(--nope-green);">N</span><span style="color: var(--nope-rose); position: relative; display: inline-block;">
+            <svg width="42" height="42" viewBox="0 0 48 48" style="vertical-align: middle;">
+              <circle cx="24" cy="24" r="16" stroke="#FF4A6E" stroke-width="3" fill="none"/>
+              <line x1="13" y1="35" x2="35" y2="13" stroke="#FF4A6E" stroke-width="3"/>
+              <text x="24" y="28" text-anchor="middle" fill="#FF4A6E" font-family="JetBrains Mono" font-size="16" font-weight="800">☏</text>
+            </svg>
+          </span><span style="color: var(--text);">PE</span><span style="color: var(--text-dim);">.</span>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: var(--space-sm); text-transform: uppercase; letter-spacing: 0.2em;">Icon variant</div>
+      </div>
+    </div>
+
+    <!-- Voice & Tone -->
+    <h3 style="font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: var(--space-md); margin-top: var(--space-2xl); color: var(--text-muted);">Voice & Tone</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-md);">
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-lg);">
+        <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--nope-green); margin-bottom: var(--space-sm);">✓ Be this</div>
+        <div style="color: var(--text-muted); font-size: 0.9rem;">Irreverent. Confident. On your side. Like a friend who's great at arguing.</div>
+      </div>
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-lg);">
+        <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--nope-rose); margin-bottom: var(--space-sm);">✗ Not this</div>
+        <div style="color: var(--text-muted); font-size: 0.9rem;">Corporate. Over-promising. Fake-friendly. Enterprise jargon.</div>
+      </div>
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-lg);">
+        <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--nope-cyan); margin-bottom: var(--space-sm);">☞ Examples</div>
+        <div style="color: var(--text-muted); font-size: 0.9rem;">
+          "Life's too short for hold music."<br>
+          "Pine AI charges you. We don't."<br>
+          "Just say nope."
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ CTA ═══ -->
+<section class="cta-section">
+  <div class="container">
+    <h2>Just say <span class="accent">nope</span>.</h2>
+    <p>Stop wasting your life on hold. Let AI do the talking.</p>
+    <div class="cta-buttons">
+      <a href="#" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        npx nope --start
+      </a>
+      <a href="https://github.com/nope-ai/nope" class="btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="container">
+    <p>
+      <a href="#">NOPE.</a> is open source under the MIT license.
+      Built with 🖤 by humans who hate hold music.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

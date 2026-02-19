@@ -1,0 +1,17 @@
+# ═══════════════════════════════════════
+# NOPE. — Docker Compose
+# ═══════════════════════════════════════
+# Usage:
+#   cp .env.example .env   # fill in your keys
+#   docker compose up -d
+
+services:
+  nope:
+    build: .
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+    restart: unless-stopped

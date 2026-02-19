@@ -1,0 +1,20 @@
+node_modules
+dist
+.git
+.env
+.DS_Store
+*.log
+
+# Docs (keep LICENSE for the image)
+README.md
+CLAUDE.md
+CONTRIBUTING.md
+.github
+
+# Tests
+src/**/__tests__
+coverage
+
+# IDE
+.vscode
+.idea
