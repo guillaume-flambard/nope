@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { stripAudioTags, extractTags, cueCount, renderTagsForTTS, buildAudioTagRule } from '../audio-tags';
+import { VoicePipeline } from '../voice-pipeline';
 
 describe('audio-tags engine (ElevenLabs cue reverse-engineering)', () => {
   it('extracts tags from text', () => {
@@ -40,5 +41,18 @@ describe('audio-tags engine (ElevenLabs cue reverse-engineering)', () => {
     expect(renderTagsForTTS('Okay [soft breath] I see.', 'groq')).not.toContain('[');
     const fr = buildAudioTagRule('fr');
     expect(fr.toLowerCase()).toContain('souffle');
+  });
+
+  it('renders a (beat) as a micro-pause (Stanislavski)', () => {
+    const out = renderTagsForTTS('Oh... (beat) I see.', 'groq');
+    expect(out).toContain('...');
+    expect(out).not.toContain('(beat)');
+  });
+
+  it('prompt includes the acting/subtext block', () => {
+    const p = new VoicePipeline({ language: 'en' });
+    const sys = p.buildSystemPrompt({ type: 'cancel', systemPrompt: 'x', tactics: [] }, { company: 'Netflix', history: [] });
+    expect(sys).toContain('SUBTEXT');
+    expect(sys).toContain('WRITE FOR THE BREATH');
   });
 });

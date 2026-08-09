@@ -28,31 +28,31 @@ const CUES: Record<Language, CuePolicy> = {
     emotions: ['[slightly hesitant]', '[firm but polite]', '[calm]', '[a little awkward]'],
     deliveries: ['[speaking softly]', '[normal voice]'],
     reactions: ['[sighs]', '[clears throat]', '[short pause]', '[exhales]', '[soft breath]'],
-    pauses: ['[short pause]', '[long pause]'],
+    pauses: ['[short pause]', '[long pause]', '(beat)'],
   },
   fr: {
     emotions: ['[légèrement hésitant]', '[ferme mais poli]', '[calme]', '[un peu gêné]'],
     deliveries: ['[à voix basse]', '[voix normale]'],
     reactions: ['[soupir]', '[s\'éclaircit la gorge]', '[courte pause]', '[expire]', '[souffle]'],
-    pauses: ['[courte pause]', '[pause]'],
+    pauses: ['[courte pause]', '[pause]', '(battement)'],
   },
   es: {
     emotions: ['[ligeramente vacilante]', '[firme pero cortés]', '[tranquilo]', '[un poco incómodo]'],
     deliveries: ['[en voz baja]', '[voz normal]'],
     reactions: ['[suspira]', '[se aclara la garganta]', '[pausa corta]', '[exhala]', '[respiro]'],
-    pauses: ['[pausa corta]', '[pausa]'],
+    pauses: ['[pausa corta]', '[pausa]', '(pausa breve)'],
   },
   de: {
     emotions: ['[leicht zögernd]', '[fest aber höflich]', '[ruhig]', '[etwas unbehaglich]'],
     deliveries: ['[leise sprechend]', '[normale Stimme]'],
     reactions: ['[seufzt]', '[räuspert sich]', '[kurze Pause]', '[atmet aus]', '[leiser Atem]'],
-    pauses: ['[kurze Pause]', '[Pause]'],
+    pauses: ['[kurze Pause]', '[Pause]', '(Schlag)'],
   },
   it: {
     emotions: ['[leggermente esitante]', '[fermo ma educato]', '[calmo]', '[un po\' a disagio]'],
     deliveries: ['[a bassa voce]', '[voce normale]'],
     reactions: ['[sospira]', '[si schiarisce la gola]', '[breve pausa]', '[espira]', '[respiro]'],
-    pauses: ['[breve pausa]', '[pausa]'],
+    pauses: ['[breve pausa]', '[pausa]', '(pausa)'],
   },
 };
 
@@ -88,6 +88,7 @@ export function renderTagsForTTS(text: string, provider: string): string {
   return text
     .replace(/\[(?:courte pause|short pause|breve pausa|kurze Pause|pause)\]/gi, '... ')
     .replace(/\[(?:long pause|pause|pausa)\]/gi, ' ... ... ')
+    .replace(/\((?:beat|battement|pausa breve|Schlag|pausa)\)/gi, ' ... ')
     .replace(/\[[^\]]*\]/g, '')
     .replace(/\s+([,.;:!?])/g, '$1')
     .replace(/\s{2,}/g, ' ')

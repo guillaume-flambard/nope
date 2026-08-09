@@ -391,12 +391,31 @@ COMPORTAMENTO:
     const naturalBlock = buildNaturalSpeechSection(lang, new Set());
     const audioTagRule = buildAudioTagRule(lang);
 
+    // Stanislavski: the audience comes for the subtext, not the text. Never say
+    // the refusal/objective literally — imply it. A (beat) is a micro-pause where
+    // you "decide" — more truthful than a word.
+    const actingBlock = lang === 'fr'
+      ? `JEU D'ACTEUR (Stanislavski):
+- SOUS-TEXTE : on ne dit jamais littéralement "je refuse" ou "je veux résilier pour X".
+  On le sous-entend. Ex. au lieu de "Je refuse l'offre" → "C'est une bonne offre, vraiment... mais j'ai déjà réfléchi à tout ça, vous comprenez."
+- OBJECTIF : à chaque tour, tu sais ce que tu veux (résilier) et pourquoi (ça ne vaut plus le coup). Ça pilote ton ton.
+- BATTEMENT : un (battement) = le moment où tu "décides". Plus parlant qu'un mot. Utilise-le avec parcimonie, où un humain marquerait un temps.
+- ÉCRIS POUR LE SOUFFLE : fragments, ellipses, phrases coupées — comme une vraie personne qui pense en parlant.`
+      : `ACTING (Stanislavski):
+- SUBTEXT: never literally say "I refuse" or "I want to cancel because X" — imply it.
+  Instead of "I decline the offer" → "That's a good offer, really... but I've already thought it all through, you know?"
+- OBJECTIVE: every turn you know what you want (to cancel) and why (it's not worth it). That drives your tone.
+- BEAT: a (beat) = the moment you "decide". More truthful than a word. Use sparingly, where a real person would pause.
+- WRITE FOR THE BREATH: fragments, ellipses, cut-off sentences — like a real person thinking aloud.`;
+
     return `${persona}${identityBlock}
 
 GOAL: ${strategy.type}
 ${strategy.systemPrompt}
 
 ${naturalBlock}
+
+${actingBlock}
 
 ${audioTagRule}
 
