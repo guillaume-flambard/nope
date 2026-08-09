@@ -31,6 +31,10 @@
   à régénérer si le repo weave devient public). Réutilisable pour Nope sans copie (lecture directe).
 - **Checklist** : (1) mettre GROQ_API_KEY dans .env, (2) vérifier `bun run src/cli.ts ... --simulate`
   utilise bien groq, (3) le live mode STT/TTS peut aussi passer par Groq (whisper-large-v3, Orpheus).
+- **STT** : `whisper-large-v3` (free). **TTS** : `canopylabs/orpheus-v1-english` — exige (a) acceptation
+  des termes dans la console Groq (playground?model=canopylabs/orpheus...) et (b) `voice` ∈
+  `[autumn diana hannah austin daniel troy]` + `response_format: 'wav'`. Le voice 'alloy' (OpenAI) est rejeté.
+- **E2E testé 2026-08-09** : STT→LLM→TTS 100% Groq, flux complet (caller parle → entend → raisonne → répond). $0.
 
 ## Mémo live probe Twilio (T7 — 2026-08-09)
 - Clés présentes ? (OPENAI + TWILIO) : **NON** — aucun `.env`, aucune clé dans `~/.secrets/`.
