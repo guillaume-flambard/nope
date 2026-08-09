@@ -32,10 +32,11 @@ export class VoicePipeline {
       llmModel: config?.llmModel ||
         (process.env.GROQ_API_KEY ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile') : 'gpt-4o-mini'),
       ttsProvider: config?.ttsProvider ||
-        (process.env.GROQ_API_KEY ? 'groq'
-          : process.env.ELEVENLABS_API_KEY ? 'elevenlabs' : 'openai'),
+        (process.env.ELEVENLABS_API_KEY ? 'elevenlabs'
+          : process.env.GROQ_API_KEY ? 'groq' : 'openai'),
       ttsVoice: config?.ttsVoice ||
-        (process.env.GROQ_API_KEY ? (process.env.GROQ_TTS_VOICE || 'diana') : 'alloy'),
+        (process.env.ELEVENLABS_API_KEY ? (process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB')
+          : process.env.GROQ_API_KEY ? (process.env.GROQ_TTS_VOICE || 'diana') : 'alloy'),
       language: config?.language || 'en',
     };
   }
@@ -550,6 +551,7 @@ TACTICS: ${strategy.tactics.join(', ')}
 
   private async elevenlabsTTS(text: string): Promise<Buffer> {
     const voiceId = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB';
+    const model = process.env.ELEVENLABS_MODEL || 'eleven_v3';
     const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
@@ -558,10 +560,19 @@ TACTICS: ${strategy.tactics.join(', ')}
       },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.5, similarity_boost: 0.8 },
+        model_id: model,
+        voice_settings: {
+          stability: 0.55,        // balanced: natural variance without wobble
+          similarity_boost: 0.8,
+          style: 0.35,            // a bit of expressiveness for dialogue
+          use_speaker_boost: true,
+        },
+        output_format: 'mp3_44100_128',
       }),
     });
+    if (!resp.ok) {
+      throw new Error(`ElevenLabs TTS ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+    }
     const arrayBuffer = await resp.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }

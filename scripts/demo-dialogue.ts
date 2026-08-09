@@ -34,9 +34,21 @@ const company = val('--company', 'Netflix');
 const goal = val('--goal', 'Cancel my Netflix subscription');
 const out = val('--out', `/tmp/nope-demo-${val('--lang', 'en')}.wav`);
 
-// ── Pipeline: NOPE's LLM + TTS (voice diana). Agent TTS uses a different voice. ──
-const nopePipeline = new VoicePipeline({ language: lang });
-const agentPipeline = new VoicePipeline({ language: lang, ttsProvider: 'groq', ttsVoice: 'austin' });
+// ── Pipeline: NOPE's LLM + TTS. Agent TTS uses a different voice. ──
+// If ELEVENLABS_API_KEY is set, both use ElevenLabs (best quality) with distinct voices.
+const hasEleven = !!process.env.ELEVENLABS_API_KEY;
+const nopePipeline = new VoicePipeline({
+  language: lang,
+  ...(hasEleven
+    ? { ttsProvider: 'elevenlabs' as const, ttsVoice: process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB' }
+    : {}),
+});
+const agentPipeline = new VoicePipeline({
+  language: lang,
+  ...(hasEleven
+    ? { ttsProvider: 'elevenlabs' as const, ttsVoice: process.env.ELEVENLABS_AGENT_VOICE || 'jBpfuIE2ffCO9mMExCc1' }
+    : { ttsProvider: 'groq' as const, ttsVoice: 'austin' }),
+});
 
 const strategy: any = {
   type: 'cancel',
@@ -75,29 +87,62 @@ async function edgeTTS(voice: string, text: string, wavPath: string): Promise<bo
   }
 }
 
-// Per-language agent / NOPE neural voices (Edge TTS).
-const EDGE_VOICES: Record<Language, { agent: string; nope: string }> = {
-  en: { agent: 'en-US-AndrewMultilingualNeural', nope: 'en-US-AvaMultilingualNeural' },
-  fr: { agent: 'fr-FR-HenriNeural', nope: 'fr-FR-DeniseNeural' },
-  es: { agent: 'es-ES-AlvaroNeural', nope: 'es-ES-ElviraNeural' },
-  de: { agent: 'de-DE-ConradNeural', nope: 'de-DE-KatjaNeural' },
-  it: { agent: 'it-IT-DiegoNeural', nope: 'it-IT-ElsaNeural' },
+// Piper (local neural VITS) — free, unlimited, high quality. Best primary voice.
+const PIPER_BIN = process.env.PIPER_BIN || '/tmp/kokoro-venv/bin/python';
+const PIPER_SCRIPT = process.env.PIPER_SCRIPT || '/Users/memo/projects/nope/scripts/tts/piper_say.py';
+const PIPER_VOICES_DIR = process.env.PIPER_VOICES_DIR || '/tmp/piper-voices';
+
+// Per-language Piper voices (agent = male, nope = female).
+const PIPER_VOICES: Record<Language, { agent: string; nope: string }> = {
+  en: { agent: 'en_US-ryan-medium.onnx', nope: 'en_US-amy-medium.onnx' },
+  fr: { agent: 'fr_FR-upmc-medium.onnx', nope: 'fr_FR-upmc-medium.onnx' },
+  es: { agent: 'es_ES-davefx-medium.onnx', nope: 'es_ES-davefx-medium.onnx' },
+  de: { agent: 'de_DE-thorsten-medium.onnx', nope: 'de_DE-thorsten-medium.onnx' },
+  it: { agent: 'it_IT-paola-medium.onnx', nope: 'it_IT-paola-medium.onnx' },
 };
 
+async function piperTTS(voice: string, text: string, wavPath: string): Promise<boolean> {
+  try {
+    execFileSync(PIPER_BIN, [PIPER_SCRIPT, `${PIPER_VOICES_DIR}/${voice}`, text, wavPath], { stdio: 'ignore' });
+    return fs.existsSync(wavPath) && fs.statSync(wavPath).size > 1000;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function say(speaker: string, text: string, idx: number): Promise<string> {
-  const p = speaker === 'agent' ? agentPipeline : nopePipeline;
-  const buf = await p.textToSpeech(text).catch(() => undefined);
   const f = `/tmp/nope-demo-part-${String(idx).padStart(2, '0')}-${speaker}.wav`;
-  if (buf && buf.length > 100) {
-    fs.writeFileSync(f, buf);
-    console.log(`[${speaker}] ${text}`);
+
+  // 1) Primary: Piper (local neural, unlimited).
+  const pv = PIPER_VOICES[lang] || PIPER_VOICES.en;
+  const voice = speaker === 'agent' ? pv.agent : pv.nope;
+  if (await piperTTS(voice, text, f)) {
+    console.log(`[${speaker}] ${text}  (piper ${voice})`);
     return f;
   }
-  // Groq quota exhausted → fall back to Edge TTS (natural neural voice).
-  const voices = EDGE_VOICES[lang] || EDGE_VOICES.en;
-  const voice = speaker === 'agent' ? voices.agent : voices.nope;
-  if (await edgeTTS(voice, text, f)) {
-    console.log(`[${speaker}] ${text}  (edge-tts ${voice})`);
+
+  // 2) Fallback: Groq Orpheus (best quality, but rate-limited).
+  const p = speaker === 'agent' ? agentPipeline : nopePipeline;
+  const buf = await p.textToSpeech(text).catch(() => undefined);
+  if (buf && buf.length > 100) {
+    // ElevenLabs returns MP3; Piper/Orpheus return WAV. Normalize to WAV via ffmpeg.
+    fs.writeFileSync(f, buf);
+    const isMp3 = buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0;
+    if (isMp3) {
+      const mp3 = f.replace(/\.wav$/, '.mp3');
+      fs.writeFileSync(mp3, buf);
+      execFileSync('ffmpeg', ['-y', '-i', mp3, '-ar', '24000', '-ac', '1', f], { stdio: 'ignore' });
+      fs.unlinkSync(mp3);
+    }
+    console.log(`[${speaker}] ${text}  (pipeline TTS)`);
+    return f;
+  }
+
+  // 3) Last resort: Edge TTS.
+  const ev = EDGE_VOICES[lang] || EDGE_VOICES.en;
+  const eVoice = speaker === 'agent' ? ev.agent : ev.nope;
+  if (await edgeTTS(eVoice, text, f)) {
+    console.log(`[${speaker}] ${text}  (edge-tts ${eVoice})`);
     return f;
   }
   console.log(`[${speaker}] ${text}  (⚠ no audio)`);
@@ -111,7 +156,7 @@ async function main(): Promise<void> {
   // 1. Agent opens
   const opening = agent.opening(company, agentName);
   parts.push(await say('agent', opening, i++));
-  await sleep(300);
+  await naturalPause('nope');
 
   // 2. NOPE states goal
   const goalLine = lang === 'fr'
@@ -120,46 +165,46 @@ async function main(): Promise<void> {
   history.push({ role: 'user', content: opening });
   history.push({ role: 'assistant', content: goalLine });
   parts.push(await say('nope', goalLine, i++));
-  await sleep(300);
+  await naturalPause('agent');
 
   // 3. Agent asks why
   const why = agent.askWhy();
   parts.push(await say('agent', why, i++));
-  await sleep(300);
+  await naturalPause('nope');
 
   // 4. NOPE answers why (LLM-driven, varies)
   const whyReply = await nopeReply(why);
   history.push({ role: 'assistant', content: whyReply });
   parts.push(await say('nope', whyReply, i++));
-  await sleep(300);
+  await naturalPause('agent');
 
   // 5. Agent offers a deal
   const offer = agent.offer();
   parts.push(await say('agent', offer, i++));
-  await sleep(300);
+  await naturalPause('nope');
 
   // 6. NOPE declines (LLM-driven, varies)
   const declineReply = await nopeReply(offer);
   history.push({ role: 'assistant', content: declineReply });
   parts.push(await say('nope', declineReply, i++));
-  await sleep(300);
+  await naturalPause('agent');
 
   // 7. Agent asks an account question
   const question = agent.question(accountEnding());
   parts.push(await say('agent', question, i++));
-  await sleep(300);
+  await naturalPause('nope');
 
   // 8. NOPE answers (LLM-driven)
   const answerReply = await nopeReply(question);
   history.push({ role: 'assistant', content: answerReply });
   parts.push(await say('nope', answerReply, i++));
-  await sleep(300);
+  await naturalPause('agent');
 
   // 9. Agent confirms
   const ref = 'NP-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   const confirm = agent.confirm(ref);
   parts.push(await say('agent', confirm, i++));
-  await sleep(300);
+  await naturalPause('nope');
 
   // 10. NOPE closes
   const close = lang === 'fr'
@@ -187,6 +232,15 @@ async function main(): Promise<void> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
+}
+
+/** Natural variable pause — humans don't reply on a fixed 300ms metronome. */
+function naturalPause(speaker: string): Promise<void> {
+  // After NOPE replies, the agent "reads/checks" (longer). After the agent,
+  // NOPE replies quickly but not instantly (small planning pause).
+  const [min, max] = speaker === 'nope' ? [250, 600] : [500, 900];
+  const ms = min + Math.floor(Math.random() * (max - min));
+  return sleep(ms);
 }
 
 main().catch(e => { console.error('demo failed:', e.message); process.exit(1); });
