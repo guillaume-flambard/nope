@@ -6,8 +6,8 @@
 import { config } from 'dotenv';
 config();
 
-const chalk = require('chalk');
-const ora = require('ora');
+import chalk from 'chalk';
+import ora from 'ora';
 
 const VERSION = '0.2.0';
 
