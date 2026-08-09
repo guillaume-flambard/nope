@@ -102,7 +102,7 @@ async function handleCall(args: string[]) {
 
   agent.on((event) => {
     switch (event.type) {
-      case 'status':
+      case 'status': {
         currentStatus = event.data.status;
         const statusLabels: Record<string, string> = {
           preparing: chalk.dim('Preparing...'),
@@ -120,8 +120,9 @@ async function handleCall(args: string[]) {
           else spinner.fail(statusLabels[currentStatus]);
         }
         break;
+      }
 
-      case 'transcript':
+      case 'transcript': {
         const { speaker, text, action } = event.data;
         if (currentStatus === 'success' || currentStatus === 'failed') break;
 
@@ -140,6 +141,7 @@ async function handleCall(args: string[]) {
 
         spinner.start();
         break;
+      }
     }
   });
 
