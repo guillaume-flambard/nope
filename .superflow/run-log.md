@@ -38,6 +38,8 @@
 | T16 démo 2 voix | scripts/demo-dialogue.ts | ✅ dialogue complet agent+NOPE (2 voix Orpheus), LLM-driven, varié, rebondissant, stable (fallbacks). `npm run demo`. ⚠ quota TTS Groq ~3600 tok/jour |
 | T17 ElevenLabs audio-tags | audio-tags.ts | ✅ reverse-engineering du système de cues ElevenLabs : LLM émet des tags épars `[...]`, TTS les rend (ElevenLabs natif, sinon ellipses). 113 tests |
 | T18 TTS local + démo | piper + demo | ✅ Piper (VITS local, illimité) intégré comme voix de démo + pauses naturelles variables. ElevenLabs prioritaire quand la clé est là |
+| T19 Kokoro (concurrence ElevenLabs) | kokoro_say.py | ✅ Kokoro-82M (open-source ~ElevenLabs quality, MPS local, gratuit) = voix principale de la démo. 2 voix distinctes par langue. audio-tags rendus |
+| T20 Physiologie de la voix | audio-tags + kokoro | ✅ Cues de respiration ([soft breath]), Kokoro speed 0.95 (posé), souffle en début de tour. Démo FR complète écoutée. 114 tests |
 
 ## Post-bet — voix naturelle (2026-08-09)
 - **Problème** : les réponses étaient figées (même phrase à chaque tour), pas de rebond sur l'agent humain, ton "écrit".
