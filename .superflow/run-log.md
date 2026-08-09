@@ -31,6 +31,8 @@
 | T9 connaissance | kb+note+run-log | ✅ kb (fixes), note Vault, run-log |
 | T10 voix naturelle | test conversation | ✅ fillers/disfluencies/ellipses, réponses courtes, VARIATION + REBOND. EN+FR, 6/6 distinctes |
 | T11 simu LLM + IVR digits | simulate + tests | ✅ LLM pilote la simulation (fini les répliques figées), saisie chiffres abonné (enter_digits, EN/FR/ES/DE/IT, DTMF live), répond aux questions multi-parties. 92 tests |
+| T12 natural-voice skill | skill créé | ✅ skill `natural-voice` (~/.config/opencode) : conversation analysis, politeness (B&L), rhétorique (Aristote), fluencemes, prosodie TTS, vocabulaires natifs par langue |
+| T13 natural-speech engine | module + tests | ✅ `natural-speech.ts` : profils EN/FR/ES/DE/IT (fillers/hedges/disfluencies/backchannels/closers/exemples/culture), injectés dans le prompt. Testé 5 langues + FR 6-tours. 96 tests |
 
 ## Post-bet — voix naturelle (2026-08-09)
 - **Problème** : les réponses étaient figées (même phrase à chaque tour), pas de rebond sur l'agent humain, ton "écrit".

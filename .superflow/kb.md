@@ -70,6 +70,21 @@
   pas le vrai numéro → rejoindre un humain). En simulation, scénario réaliste : saisie `48213760#`.
 - **Tests** : 4 nouveaux (EN/FR digit entry + pas de faux positif sur menu normal).
 
+## Fix: voix naturelle — skill `natural-voice` + moteur par langue (2026-08-09)
+- **Sources** : conversation analysis (Sacks/Schegloff/Jefferson 74-77 : turn-taking, adjacency pairs,
+  repair, préférence pour l'auto-correction), politeness (Brown & Levinson : positive/negative face,
+  hedging), rhétorique (Aristote : ethos/pathos/logos/kairos), fluencemes (Crible/Götz : fillers en
+  début de tour), backchannels (Yngve), fréquence 2-4 disfluencies/tour (Vapi), prosodie TTS
+  (ponctuation → pauses), différences culturelles (Pallotti 2008).
+- **Livrables** : skill `~/.config/opencode/skills/natural-voice/SKILL.md` (toute la science) +
+  `src/core/natural-speech.ts` (profils par langue) + `buildNaturalSpeechSection()` injecté dans le
+  system prompt.
+- **Résultat testé** : EN/FR/ES/DE/IT sonnent natifs (euh/voilà, pues/mire, ähm/eigentlich,
+  ehm/ecco/cioè), FR 6-tours 6/6 distinctes avec rebonds sur offre/prix + auto-correction "attendez".
+- **Pièges connus** : (1) le LLM invente un nom fictif quand on le lui demande → fournir une vraie
+  identité au prompt si on veut un personnage cohérent. (2) Groq multilingue mélange parfois
+  (ex: "subscription" en italien au lieu de "abbonamento") — vérifier sur les langues secondaires.
+
 ## Mémo live probe Twilio (T7 — 2026-08-09)
 - Clés présentes ? (OPENAI + TWILIO) : **NON** — aucun `.env`, aucune clé dans `~/.secrets/`.
 - Appel réel initié ? : **NON**
