@@ -15,8 +15,16 @@ import torch, numpy as np, soundfile as sf
 from kokoro import KPipeline
 
 p = KPipeline(lang_code=lang)
+
+# A natural voice breathes and isn't rushed: slight slowdown (relaxed pacing)
+# + a soft breath before the turn (opening the chest, not pressing the throat).
+SPEED = float(os.environ.get('KOKORO_SPEED', '0.95'))
+BREATH = os.environ.get('KOKORO_BREATH', '1') == '1'
+if BREATH:
+    text = '\n' + text  # leading newline = a natural intake of breath at turn start
+
 parts = []
-for result in p(text, voice=voice, speed=1.0):
+for result in p(text, voice=voice, speed=SPEED):
     parts.append(result.audio)
 if not parts:
     sys.exit('no audio')

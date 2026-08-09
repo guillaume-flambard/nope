@@ -34,4 +34,11 @@ describe('audio-tags engine (ElevenLabs cue reverse-engineering)', () => {
     expect(en).toContain('SPARSE AUDIO CUES (EN)');
     expect(en).toContain('[short pause]');
   });
+
+  it('includes breath cues (physiology: a natural voice breathes)', () => {
+    expect(extractTags('Okay [soft breath] I see.')).toEqual(['[soft breath]']);
+    expect(renderTagsForTTS('Okay [soft breath] I see.', 'groq')).not.toContain('[');
+    const fr = buildAudioTagRule('fr');
+    expect(fr.toLowerCase()).toContain('souffle');
+  });
 });
