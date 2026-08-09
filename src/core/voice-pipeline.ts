@@ -33,7 +33,8 @@ export class VoicePipeline {
       ttsProvider: config?.ttsProvider ||
         (process.env.GROQ_API_KEY ? 'groq'
           : process.env.ELEVENLABS_API_KEY ? 'elevenlabs' : 'openai'),
-      ttsVoice: config?.ttsVoice || 'alloy',
+      ttsVoice: config?.ttsVoice ||
+        (process.env.GROQ_API_KEY ? (process.env.GROQ_TTS_VOICE || 'diana') : 'alloy'),
       language: config?.language || 'en',
     };
   }
@@ -452,7 +453,8 @@ TACTICS: ${strategy.tactics.join(', ')}
   }
 
   private async groqTTS(text: string): Promise<Buffer> {
-    // Groq Orpheus — free TTS, OpenAI-compatible /audio/speech
+    // Groq Orpheus — free TTS, OpenAI-compatible /audio/speech.
+    // Voices: autumn diana hannah austin daniel troy. Requires response_format=wav.
     const { default: OpenAI } = await import('openai');
     const client = new OpenAI({
       apiKey: process.env.GROQ_API_KEY,
@@ -461,6 +463,7 @@ TACTICS: ${strategy.tactics.join(', ')}
     const response = await client.audio.speech.create({
       model: process.env.GROQ_TTS_MODEL || 'canopylabs/orpheus-v1-english',
       voice: this.config.ttsVoice as any,
+      response_format: 'wav',
       input: text,
     });
     const arrayBuffer = await response.arrayBuffer();
