@@ -52,6 +52,24 @@
 - **Piège restant** : le LLM invente un nom + numéro d'abonné fictif → fournir une vraie identité au prompt
   si on veut un personnage cohérent.
 
+## Fix: la simulation utilisait des répliques figées (2026-08-09)
+- **Signature** : la démo `--simulate` semblait encore robotique alors que le live était naturel.
+- **Cause** : `caller.simulate()` générait les réponses de NOPE en dur (scriptées), le LLM n'était
+  appelé que dans le live (twilio-stream). Le nouveau prompt naturel ne servait pas en démo.
+- **Fix** : `caller.simulate(task, strategy, onEvent, llm?)` — callback LLM optionnel. `agent.ts`
+  crée le VoicePipeline et passe `(agentTurn, history) => pipeline.generateResponse(...)`. `nopeSay`
+  pousse le tour agent EN PREMIER (sinon le LLM répond avec un tour de retard).
+- **Résultat** : la simulation utilise le LLM Groq → voix naturelle + rebonds, y compris en démo.
+
+## Fix: IVR — saisie de numéro d'abonné (2026-08-09)
+- **Signature** : "Please enter your subscriber number" — l'IVR Navigator ne savait que presser des
+  touches, pas saisir des chiffres.
+- **Fix** : action `enter_digits` dans IVRAnalysis + `detectDigitEntry()` (patterns EN/FR/ES/DE/IT :
+  enter/type account·subscriber·customer·number, entrer/saisir numéro d'abonné, ingrese su numero,
+  geben sie kundennummer, inserisca numero...). En live, `enter_digits` → presser 0 (on ne connaît
+  pas le vrai numéro → rejoindre un humain). En simulation, scénario réaliste : saisie `48213760#`.
+- **Tests** : 4 nouveaux (EN/FR digit entry + pas de faux positif sur menu normal).
+
 ## Mémo live probe Twilio (T7 — 2026-08-09)
 - Clés présentes ? (OPENAI + TWILIO) : **NON** — aucun `.env`, aucune clé dans `~/.secrets/`.
 - Appel réel initié ? : **NON**

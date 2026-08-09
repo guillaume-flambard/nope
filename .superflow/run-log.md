@@ -30,6 +30,7 @@
 | T8 audit | G5 | ✅ lint+test+build verts ; deps up 67→61 vulns (critical résolue) ; a11y dashboard basique OK |
 | T9 connaissance | kb+note+run-log | ✅ kb (fixes), note Vault, run-log |
 | T10 voix naturelle | test conversation | ✅ fillers/disfluencies/ellipses, réponses courtes, VARIATION + REBOND. EN+FR, 6/6 distinctes |
+| T11 simu LLM + IVR digits | simulate + tests | ✅ LLM pilote la simulation (fini les répliques figées), saisie chiffres abonné (enter_digits, EN/FR/ES/DE/IT, DTMF live), répond aux questions multi-parties. 92 tests |
 
 ## Post-bet — voix naturelle (2026-08-09)
 - **Problème** : les réponses étaient figées (même phrase à chaque tour), pas de rebond sur l'agent humain, ton "écrit".
