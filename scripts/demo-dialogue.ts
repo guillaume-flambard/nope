@@ -18,6 +18,10 @@ import { VoicePipeline } from '../src/core/voice-pipeline';
 import { AgentVoice, accountEnding } from '../src/core/agent-voice';
 import type { Language } from '../src/core/types';
 
+// ── Edge TTS (Microsoft neural voices) as reliable natural fallback.
+// Free, no key, high quality. Path to the venv that has edge-tts installed.
+const EDGE_TTS = process.env.EDGE_TTS_BIN || '/tmp/edge-venv/bin/edge-tts';
+
 const args = process.argv.slice(2);
 const val = (flag: string, dflt: string): string => {
   const eq = args.find(a => a.startsWith(`${flag}=`))?.split('=')[1];
@@ -59,6 +63,27 @@ async function nopeReply(agentTurn: string): Promise<string> {
     : "Um, I'd like to cancel my subscription, please.");
 }
 
+async function edgeTTS(voice: string, text: string, wavPath: string): Promise<boolean> {
+  try {
+    const mp3 = wavPath.replace(/\.wav$/, '.mp3');
+    execFileSync(EDGE_TTS, ['--voice', voice, '--text', text, '--write-media', mp3], { stdio: 'ignore' });
+    execFileSync('ffmpeg', ['-y', '-i', mp3, '-ar', '24000', '-ac', '1', wavPath], { stdio: 'ignore' });
+    fs.unlinkSync(mp3);
+    return fs.existsSync(wavPath) && fs.statSync(wavPath).size > 1000;
+  } catch (_) {
+    return false;
+  }
+}
+
+// Per-language agent / NOPE neural voices (Edge TTS).
+const EDGE_VOICES: Record<Language, { agent: string; nope: string }> = {
+  en: { agent: 'en-US-AndrewMultilingualNeural', nope: 'en-US-AvaMultilingualNeural' },
+  fr: { agent: 'fr-FR-HenriNeural', nope: 'fr-FR-DeniseNeural' },
+  es: { agent: 'es-ES-AlvaroNeural', nope: 'es-ES-ElviraNeural' },
+  de: { agent: 'de-DE-ConradNeural', nope: 'de-DE-KatjaNeural' },
+  it: { agent: 'it-IT-DiegoNeural', nope: 'it-IT-ElsaNeural' },
+};
+
 async function say(speaker: string, text: string, idx: number): Promise<string> {
   const p = speaker === 'agent' ? agentPipeline : nopePipeline;
   const buf = await p.textToSpeech(text).catch(() => undefined);
@@ -68,7 +93,13 @@ async function say(speaker: string, text: string, idx: number): Promise<string> 
     console.log(`[${speaker}] ${text}`);
     return f;
   }
-  // TTS failed — still record the line so the transcript is complete.
+  // Groq quota exhausted → fall back to Edge TTS (natural neural voice).
+  const voices = EDGE_VOICES[lang] || EDGE_VOICES.en;
+  const voice = speaker === 'agent' ? voices.agent : voices.nope;
+  if (await edgeTTS(voice, text, f)) {
+    console.log(`[${speaker}] ${text}  (edge-tts ${voice})`);
+    return f;
+  }
   console.log(`[${speaker}] ${text}  (⚠ no audio)`);
   return '';
 }
