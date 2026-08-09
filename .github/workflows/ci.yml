@@ -14,9 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Bun
-        uses: oven/setup-bun@v2
-        with:
-          bun-version: latest
+        run: curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
       - name: Install dependencies
         run: bun install
       - name: Run lint
@@ -34,9 +32,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Setup Bun
-        uses: oven/setup-bun@v2
-        with:
-          bun-version: latest
+        run: curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         run: bun install
