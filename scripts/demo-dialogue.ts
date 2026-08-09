@@ -92,6 +92,27 @@ const PIPER_BIN = process.env.PIPER_BIN || '/tmp/kokoro-venv/bin/python';
 const PIPER_SCRIPT = process.env.PIPER_SCRIPT || '/Users/memo/projects/nope/scripts/tts/piper_say.py';
 const PIPER_VOICES_DIR = process.env.PIPER_VOICES_DIR || '/tmp/piper-voices';
 
+// Kokoro (open-source neural, ~ElevenLabs quality) — top priority, local + free.
+const KOKORO_BIN = process.env.KOKORO_BIN || '/tmp/tts-sota/bin/python';
+const KOKORO_SCRIPT = process.env.KOKORO_SCRIPT || '/Users/memo/projects/nope/scripts/tts/kokoro_say.py';
+const KOKORO_VOICES: Record<Language, { agent: string; nope: string }> = {
+  en: { agent: 'am_michael', nope: 'af_heart' },
+  fr: { agent: 'bm_george', nope: 'bf_emma' },
+  es: { agent: 'am_michael', nope: 'af_heart' },
+  de: { agent: 'am_michael', nope: 'af_heart' },
+  it: { agent: 'am_michael', nope: 'af_heart' },
+};
+const KOKORO_LANG: Record<Language, string> = { en: 'a', fr: 'f', es: 'e', de: 'd', it: 'i' };
+
+async function kokoroTTS(voice: string, text: string, wavPath: string, lang: Language): Promise<boolean> {
+  try {
+    execFileSync(KOKORO_BIN, [KOKORO_SCRIPT, voice, text, wavPath, KOKORO_LANG[lang] || 'a'], { stdio: 'ignore' });
+    return fs.existsSync(wavPath) && fs.statSync(wavPath).size > 1000;
+  } catch (_) {
+    return false;
+  }
+}
+
 // Per-language Piper voices (agent = male, nope = female).
 const PIPER_VOICES: Record<Language, { agent: string; nope: string }> = {
   en: { agent: 'en_US-ryan-medium.onnx', nope: 'en_US-amy-medium.onnx' },
@@ -113,7 +134,15 @@ async function piperTTS(voice: string, text: string, wavPath: string): Promise<b
 async function say(speaker: string, text: string, idx: number): Promise<string> {
   const f = `/tmp/nope-demo-part-${String(idx).padStart(2, '0')}-${speaker}.wav`;
 
-  // 1) Primary: Piper (local neural, unlimited).
+  // 1) Primary: Kokoro (open-source neural, ~ElevenLabs quality, local + free).
+  const kv = KOKORO_VOICES[lang] || KOKORO_VOICES.en;
+  const kvoice = speaker === 'agent' ? kv.agent : kv.nope;
+  if (await kokoroTTS(kvoice, text, f, lang)) {
+    console.log(`[${speaker}] ${text}  (kokoro ${kvoice})`);
+    return f;
+  }
+
+  // 2) Fallback: Piper (local neural, unlimited).
   const pv = PIPER_VOICES[lang] || PIPER_VOICES.en;
   const voice = speaker === 'agent' ? pv.agent : pv.nope;
   if (await piperTTS(voice, text, f)) {
