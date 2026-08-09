@@ -36,6 +36,8 @@
 | T14 LLM toutes stratégies | caller | ✅ negotiate + general pilotés par LLM (plus que cancel). Fallback local par langue (zéro silence). 104 tests |
 | T15 AgentVoice + identité | caller/agent-voice | ✅ agent humain varié par langue (openings/offres/questions/relances/confirms) + rebond. Identité configurable NOPE_NAME, sinon esquive polie (jamais d'invention). 104 tests |
 | T16 démo 2 voix | scripts/demo-dialogue.ts | ✅ dialogue complet agent+NOPE (2 voix Orpheus), LLM-driven, varié, rebondissant, stable (fallbacks). `npm run demo`. ⚠ quota TTS Groq ~3600 tok/jour |
+| T17 ElevenLabs audio-tags | audio-tags.ts | ✅ reverse-engineering du système de cues ElevenLabs : LLM émet des tags épars `[...]`, TTS les rend (ElevenLabs natif, sinon ellipses). 113 tests |
+| T18 TTS local + démo | piper + demo | ✅ Piper (VITS local, illimité) intégré comme voix de démo + pauses naturelles variables. ElevenLabs prioritaire quand la clé est là |
 
 ## Post-bet — voix naturelle (2026-08-09)
 - **Problème** : les réponses étaient figées (même phrase à chaque tour), pas de rebond sur l'agent humain, ton "écrit".
