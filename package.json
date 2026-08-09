@@ -2,11 +2,11 @@
   "name": "nope-ai",
   "version": "0.1.0",
   "description": "Open-source AI that calls companies so you don't have to. Cancel, negotiate, complain — hands free.",
-  "author": "nope-ai",
+  "author": "Guillaume Flambard",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nope-ai/nope"
+    "url": "https://github.com/guillaume-flambard/nope"
   },
   "keywords": [
     "ai",
@@ -68,5 +68,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/guillaume-flambard/nope/issues"
+  },
+  "homepage": "https://github.com/guillaume-flambard/nope"
 }

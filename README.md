@@ -8,7 +8,7 @@
   Cancel subscriptions · Negotiate bills · File complaints — hands free.
   <br />
   <br />
-  <a href="#quick-start">Quick Start</a> · <a href="#demo">Demo</a> · <a href="#how-it-works">How It Works</a> · <a href="https://github.com/nope-ai/nope/issues">Issues</a>
+  <a href="#quick-start">Quick Start</a> · <a href="#demo">Demo</a> · <a href="#how-it-works">How It Works</a> · <a href="https://github.com/guillaume-flambard/nope/issues">Issues</a>
   <br />
   <br />
   <img src="https://img.shields.io/badge/license-MIT-B5FF4A?style=flat-square" />
@@ -72,7 +72,7 @@ $ npx nope "Résilie mon abonnement Canal+"
 npx nope "Cancel my Netflix subscription"
 
 # Or clone and run locally
-git clone https://github.com/nope-ai/nope.git
+git clone https://github.com/guillaume-flambard/nope.git
 cd nope
 npm install
 npm run simulate
@@ -223,7 +223,7 @@ Nope gets better with every contribution. Here's how you can help:
 **Fix IVR patterns** — More phone menu patterns in `ivr-navigator.ts`
 
 ```bash
-git clone https://github.com/nope-ai/nope.git
+git clone https://github.com/guillaume-flambard/nope.git
 cd nope
 npm install
 npm run dev -- call "Cancel my Netflix" --simulate
