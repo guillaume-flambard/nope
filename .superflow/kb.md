@@ -36,6 +36,22 @@
   `[autumn diana hannah austin daniel troy]` + `response_format: 'wav'`. Le voice 'alloy' (OpenAI) est rejeté.
 - **E2E testé 2026-08-09** : STT→LLM→TTS 100% Groq, flux complet (caller parle → entend → raisonne → répond). $0.
 
+## Fix: voix naturelle — prompt voice (2026-08-09)
+- **Signature** : réponses robotiques, répétitives, ton "écrit" (LLM post-entraîné sur du texte propre).
+- **Fix** (`buildSystemPrompt`) :
+  1. Persona explicite : "vraie personne au téléphone, PAS du texte écrit ni un robot".
+  2. Fillers + disfluencies naturels : um/so/okay/well (EN), euh/ben/voyons (FR), jamais forcés.
+  3. Ellipses "..." pour les pauses parlées.
+  4. Réponses 1-2 phrases.
+  5. **Variation systématique** : "NEVER repeat the same phrase twice".
+  6. **Rebond systématique** : répondre AU CONTENU de l'agent (offre → reconnaître puis refuser autrement ;
+     prix/date → réagir ; question → répondre d'abord ; confirmation → remercier + confirmer le numéro).
+- **Sources web** : LiveKit "Prompting voice agents to sound more realistic", Vapi prompting guide (2-4
+  disfluencies/tour), Retell expressive mode, VoiceInfra (turn-taking, emotion).
+- **Résultat testé** : EN+FR, 6/6 réponses distinctes, rebonds sur $9.99/15€/numéro de confirmation.
+- **Piège restant** : le LLM invente un nom + numéro d'abonné fictif → fournir une vraie identité au prompt
+  si on veut un personnage cohérent.
+
 ## Mémo live probe Twilio (T7 — 2026-08-09)
 - Clés présentes ? (OPENAI + TWILIO) : **NON** — aucun `.env`, aucune clé dans `~/.secrets/`.
 - Appel réel initié ? : **NON**

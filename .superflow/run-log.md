@@ -28,7 +28,19 @@
 | T6 repo public | G3 | ✅ public, CI vert, zéro secret, README/package alignés |
 | T7 live probe | G4 | ⚠️ **PIVOT** : pas de clés Twilio/OpenAI (kill-criteria). Live codé mais non testé réel |
 | T8 audit | G5 | ✅ lint+test+build verts ; deps up 67→61 vulns (critical résolue) ; a11y dashboard basique OK |
-| T9 connaissance | kb+note+run-log | pending |
+| T9 connaissance | kb+note+run-log | ✅ kb (fixes), note Vault, run-log |
+| T10 voix naturelle | test conversation | ✅ fillers/disfluencies/ellipses, réponses courtes, VARIATION + REBOND. EN+FR, 6/6 distinctes |
+
+## Post-bet — voix naturelle (2026-08-09)
+- **Problème** : les réponses étaient figées (même phrase à chaque tour), pas de rebond sur l'agent humain, ton "écrit".
+- **Fix** : réécriture de `buildSystemPrompt` (voice-pipeline.ts) — persona "vraie personne au téléphone", fillers
+  (um/so/ben/euh/oh...), disfluencies, ellipses pour les pauses, réponses 1-2 phrases, **variation systématique**
+  ("NEVER repeat the same phrase twice"), **rebond sur chaque réponse** (offre/prix/question/confirmation).
+- **Stack Groq (free)** : LLM llama-3.3-70b, STT whisper-large-v3, TTS orpheus (voice diana, response_format wav).
+  E2E audio testé. Coût $0.
+- **À noter** : le LLM invente un nom + numéro d'abonné fictif quand on lui demande de se présenter — à corriger
+  (ajouter une vraie identité utilisateur au prompt si besoin).
+- **Deps** : `bun update --latest` → TS 7.0 incompatible typescript-eslint 8 → épinglé 5.9. Leçon : vérifier lint+CI après --latest.
 
 ## Notes de la boucle
 - **deps** : `bun update --latest` a monté TS 7.0 → incompatible typescript-eslint 8 → épinglé
