@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════
 
 import { VoicePipelineConfig, Language, Strategy, TranscriptEntry } from './types';
+import { buildNaturalSpeechSection } from './natural-speech';
 
 // ── Timeout utility ──
 
@@ -376,11 +377,14 @@ COMPORTAMENTO:
 - Se insistono, ripeti la richiesta con altre parole.`,
     };
     const rules = rulesMap[lang] || rulesMap.en;
+    const naturalBlock = buildNaturalSpeechSection(lang, new Set());
 
     return `${persona}
 
 GOAL: ${strategy.type}
 ${strategy.systemPrompt}
+
+${naturalBlock}
 
 ${rules}
 
