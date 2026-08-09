@@ -469,6 +469,10 @@ export class TwilioStreamHandler {
 
     if (analysis.action === 'press_key' || analysis.action === 'press_zero') {
       await this.sendDTMF(analysis.value);
+    } else if (analysis.action === 'enter_digits') {
+      // We don't know the subscriber number: press 0 to reach a human instead of looping.
+      await this.sendDTMF('0');
+      this.emitTranscript('system', 'IVR requested a subscriber number — pressing 0 for a human agent');
     }
     // 'wait' and 'speak' actions: do nothing special, keep listening
   }

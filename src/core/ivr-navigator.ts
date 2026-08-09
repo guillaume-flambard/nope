@@ -10,8 +10,8 @@ interface MenuOption {
 }
 
 interface IVRAnalysis {
-  action: 'press_key' | 'speak' | 'wait' | 'press_zero';
-  value: string;     // Key to press or words to say
+  action: 'press_key' | 'enter_digits' | 'speak' | 'wait' | 'press_zero';
+  value: string;     // Key to press, digits to enter, or words to say
   confidence: number;
   reason: string;
 }
@@ -63,6 +63,10 @@ export class IVRNavigator {
         };
       }
     }
+
+    // Detect "enter your account/subscriber number then #" — requires DTMF digit entry
+    const digitEntry = this.detectDigitEntry(prompt, language);
+    if (digitEntry) return digitEntry;
 
     // Detect menu loop (same menu repeated)
     if (this.detectRepeatMenu(prompt)) {
@@ -140,6 +144,49 @@ export class IVRNavigator {
     }
 
     return null;
+  }
+
+  /** Detect "enter your account/subscriber/phone number then #" — DTMF digit entry */
+  private detectDigitEntry(prompt: string, language: Language): IVRAnalysis | null {
+    const lower = prompt.toLowerCase();
+
+    const patterns: Record<Language, RegExp[]> = {
+      en: [
+        /(?:enter|type|key in|dial|please enter)\s+(?:your\s+)?(account|subscriber|customer|phone|telephone|membership|member|service)\s*(?:number|id|code|no\.?|#)/,
+        /(?:enter|type|key in)\s+the\s+(account|subscriber|customer|phone|telephone|membership)\s*(?:number|id|code)/,
+        /please\s+(?:enter|provide|type)\s+(?:your\s+)?\d{1,2}[- ]?digit/,
+        /(?:to (?:verify|continue|proceed)|for (?:verification|security|account))\s*,\s*(?:please\s+)?(?:enter|type)\s+(?:your\s+)?(?:account|subscriber|pin|number)/,
+      ],
+      fr: [
+        /(?:entrez|tapez|saisissez|composez|indiquez)\s+(?:votre|le)\s+(?:num[eé]ro\s+)?(d'abonn[eé]|d'[aà]bonn[eé]|de compte|client|t[eé]l[eé]phone|abonn[eé])/,
+        /(?:entrez|tapez|saisissez|composez)\s+(?:votre\s+)?(?:num[eé]ro|code|identifiant)\s+(?:d'abonn[eé]|d'[aà]bonn[eé]|de compte|client)/,
+        /(?:veuillez|merci de)\s+(?:entrer|saisir|taper)\s+(?:votre\s+)?(?:num[eé]ro\s+)?(?:d'abonn[eé]|d'[aà]bonn[eé]|de compte|client)/,
+        /appuyez sur\s+#\s+(?:pour\s+)?(?:valider|confirmer|terminer)/,
+      ],
+      es: [
+        /(?:ingrese|teclee|marque|escriba)\s+(?:su|el)\s+(?:n[uú]mero\s+)?(?:de\s+)?(cuenta|suscriptor|cliente|tel[eé]fono|abonado)/,
+        /(?:ingrese|teclee|marque)\s+(?:su\s+)?(?:n[uú]mero|c[oó]digo)\s+(?:de\s+)?(?:cuenta|cliente|suscripci[oó]n)/,
+      ],
+      de: [
+        /(?:geben sie|eingeben|tippen sie|w[aä]hlen sie)\s+(?:ihre|ihren|die)\s+(?:kundennummer|mitgliedsnummer|kontonummer|telefonnummer|abonnentennummer|pin)/,
+        /(?:geben sie|tippen sie)\s+(?:ihre\s+)?(?:kontonummer|kundennummer|mitgliedsnummer)\s+ein/,
+      ],
+      it: [
+        /(?:inserisca|inserisci|digitare|digitare il)\s+(?:il\s+)?(?:numero\s+)?(?:di\s+)?(conto|abbonato|cliente|telefono|abbonamento)/,
+        /(?:inserisca|inserisci)\s+(?:il\s+)?(?:numero|codice)\s+(?:di\s+)?(?:conto|cliente|abbonato)/,
+      ],
+    };
+
+    const re = patterns[language] || patterns.en;
+    const match = re.some(p => p.test(lower));
+    if (!match) return null;
+
+    return {
+      action: 'enter_digits',
+      value: '',
+      confidence: 0.85,
+      reason: 'IVR requests a subscriber/account number — entering digits',
+    };
   }
 
   /** Parse "Press X for Y" patterns */

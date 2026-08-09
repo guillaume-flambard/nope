@@ -133,3 +133,29 @@ describe('IVRNavigator', () => {
     expect(options.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('digit entry (account number)', () => {
+  it('detects EN "enter your account number"', () => {
+    const nav = new IVRNavigator();
+    const r = nav.analyze('Please enter your account number, followed by the pound key.', 'cancel', 'en');
+    expect(r.action).toBe('enter_digits');
+  });
+
+  it('detects EN "enter your subscriber number"', () => {
+    const nav = new IVRNavigator();
+    const r = nav.analyze('Please enter your subscriber number, followed by #.', 'cancel', 'en');
+    expect(r.action).toBe('enter_digits');
+  });
+
+  it('detects FR "saisissez votre numéro d\'abonné"', () => {
+    const nav = new IVRNavigator();
+    const r = nav.analyze('Veuillez saisir votre numéro d\'abonné, suivi de la touche dièse.', 'cancel', 'fr');
+    expect(r.action).toBe('enter_digits');
+  });
+
+  it('does not trigger on a normal menu', () => {
+    const nav = new IVRNavigator();
+    const r = nav.analyze('For billing press 1. For cancellations press 3.', 'cancel', 'en');
+    expect(r.action).toBe('press_key');
+  });
+});

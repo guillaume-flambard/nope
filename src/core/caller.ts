@@ -81,7 +81,8 @@ export class Caller {
   async simulate(
     task: CallTask,
     strategy: Strategy,
-    onEvent: (event: SimEvent) => void
+    onEvent: (event: SimEvent) => void,
+    llm?: (agentTurn: string, history: Array<{ role: string; content: string }>) => Promise<string>
   ): Promise<SimResult> {
     const lang = task.language;
     const company = task.company || 'the company';
@@ -147,6 +148,40 @@ export class Caller {
     });
     await this.pause(1500);
 
+    // ── Account number entry (real IVR scenario: "enter your subscriber number") ──
+    const accountDigits = task.strategy === 'cancel' ? '48213760' : task.strategy === 'negotiate' ? '90318425' : '65120947';
+    onEvent({
+      speaker: 'ivr',
+      text: this.loc(lang, {
+        en: 'Please enter your subscriber number, followed by the pound key.',
+        fr: 'Veuillez saisir votre numéro d\'abonné, suivi de la touche dièse.',
+        es: 'Por favor, ingrese su número de suscriptor, seguido de la tecla de numeral.',
+        de: 'Bitte geben Sie Ihre Abonnentennummer ein, gefolgt von der Raute-Taste.',
+        it: 'Inserisca il suo numero di abbonato, seguito dal cancelletto.',
+      }),
+    });
+    await this.pause(1500);
+    onEvent({
+      speaker: 'nope',
+      text: this.loc(lang, {
+        en: `(Entering ${accountDigits}#)`, fr: `(Saisie ${accountDigits}#)`, es: `(Ingresando ${accountDigits}#)`,
+        de: `(Eingabe ${accountDigits}#)`, it: `(Inserendo ${accountDigits}#)`,
+      }),
+      action: 'enter_digits',
+    });
+    await this.pause(1800);
+    onEvent({
+      speaker: 'ivr',
+      text: this.loc(lang, {
+        en: 'Thank you. One moment while I pull up your account...',
+        fr: 'Merci. Un instant pendant que je consulte votre compte...',
+        es: 'Gracias. Un momento mientras reviso su cuenta...',
+        de: 'Danke. Einen Moment, ich rufe Ihr Konto auf...',
+        it: 'Grazie. Un attimo mentre recupero il suo conto...',
+      }),
+    });
+    await this.pause(1500);
+
     // ── Phase 3: On Hold ──
     onEvent({
       speaker: 'ivr',
@@ -191,7 +226,7 @@ export class Caller {
     // ── Phase 5: Strategy Execution ──
     switch (task.strategy) {
       case 'cancel':
-        return await this.simulateCancel(task, agentName, lang, onEvent);
+        return await this.simulateCancel(task, agentName, lang, onEvent, llm);
       case 'negotiate':
         return await this.simulateNegotiate(task, agentName, lang, onEvent);
       default:
@@ -201,100 +236,131 @@ export class Caller {
 
   private async simulateCancel(
     task: CallTask, agent: string, lang: Language,
-    emit: (e: SimEvent) => void
+    emit: (e: SimEvent) => void,
+    llm?: (agentTurn: string, history: Array<{ role: string; content: string }>) => Promise<string>
   ): Promise<SimResult> {
     const company = task.company || 'the service';
+    const history: Array<{ role: string; content: string }> = [];
+
+    /** Emit NOPE's spoken reply: LLM if available (natural, varied, responsive), else scripted fallback. */
+    const nopeSay = async (fallback: string, agentTurn: string): Promise<void> => {
+      // Push the agent's turn FIRST so the LLM answers the latest thing said.
+      if (agentTurn) history.push({ role: 'user', content: agentTurn });
+      let reply = fallback;
+      if (llm) {
+        try {
+          const r = await llm(agentTurn, history);
+          if (r && r.trim()) reply = r.trim();
+        } catch (_) { /* fallback to scripted line */ }
+      }
+      history.push({ role: 'assistant', content: reply });
+      emit({ speaker: 'nope', text: reply, statusChange: 'negotiating' });
+    };
 
     // Opening
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    await nopeSay(
+      this.loc(lang, {
         en: `Hi ${agent}. I'm calling to cancel my ${company} subscription, please.`,
         fr: `Bonjour ${agent}. J'appelle pour résilier mon abonnement ${company}, s'il vous plaît.`,
         es: `Hola ${agent}. Llamo para cancelar mi suscripción de ${company}, por favor.`,
         de: `Hallo ${agent}. Ich rufe an, um mein ${company}-Abonnement zu kündigen, bitte.`,
         it: `Buongiorno ${agent}. Chiamo per disdire il mio abbonamento ${company}, per favore.`,
       }),
-      statusChange: 'negotiating',
-    });
+      ''
+    );
     await this.pause(2000);
 
-    // Retention attempt 1
-    emit({
-      speaker: 'agent',
-      text: this.loc(lang, {
-        en: `I understand. May I ask why? We might have an offer that could interest you...`,
-        fr: `Je comprends. Puis-je vous demander la raison ? Nous avons peut-être une offre qui pourrait vous intéresser...`,
-        es: `Entiendo. ¿Puedo preguntarle el motivo? Quizás tengamos una oferta que pueda interesarle...`,
-        de: `Ich verstehe. Darf ich nach dem Grund fragen? Vielleicht haben wir ein Angebot, das Sie interessieren könnte...`,
-        it: `Capisco. Posso chiederle il motivo? Forse abbiamo un'offerta che potrebbe interessarla...`,
-      }),
+    // Retention attempt 1 — "why?"
+    const whyTurn = this.loc(lang, {
+      en: `I understand. May I ask why? We might have an offer that could interest you...`,
+      fr: `Je comprends. Puis-je vous demander la raison ? Nous avons peut-être une offre qui pourrait vous intéresser...`,
+      es: `Entiendo. ¿Puedo preguntarle el motivo? Quizás tengamos una oferta que pueda interesarle...`,
+      de: `Ich verstehe. Darf ich nach dem Grund fragen? Vielleicht haben wir ein Angebot, das Sie interessieren könnte...`,
+      it: `Capisco. Posso chiederle il motivo? Forse abbiamo un'offerta che potrebbe interessarla...`,
     });
+    emit({ speaker: 'agent', text: whyTurn });
     await this.pause(2000);
 
-    // Nope stays firm
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    await nopeSay(
+      this.loc(lang, {
         en: `Thank you, but my decision is final. It's for personal reasons. I just want to cancel.`,
         fr: `Merci, mais ma décision est prise. C'est pour des raisons personnelles. Je souhaite juste résilier.`,
         es: `Gracias, pero mi decisión es definitiva. Es por motivos personales. Solo quiero cancelar.`,
         de: `Danke, aber meine Entscheidung steht fest. Es sind persönliche Gründe. Ich möchte einfach kündigen.`,
         it: `Grazie, ma la mia decisione è definitiva. È per motivi personali. Desidero solo disdire.`,
       }),
-    });
+      whyTurn
+    );
     await this.pause(2000);
 
-    // Retention attempt 2
-    emit({
-      speaker: 'agent',
-      text: this.loc(lang, {
-        en: `I understand. What if I offered you 50% off for 3 months?`,
-        fr: `Je comprends. Et si je vous proposais 50% de réduction pendant 3 mois ?`,
-        es: `Entiendo. ¿Y si le ofrezco un 50% de descuento durante 3 meses?`,
-        de: `Ich verstehe. Was, wenn ich Ihnen 50% Rabatt für 3 Monate anbiete?`,
-        it: `Capisco. E se le offrissi il 50% di sconto per 3 mesi?`,
-      }),
+    // Retention attempt 2 — "50% off"
+    const offerTurn = this.loc(lang, {
+      en: `I understand. What if I offered you 50% off for 3 months?`,
+      fr: `Je comprends. Et si je vous proposais 50% de réduction pendant 3 mois ?`,
+      es: `Entiendo. ¿Y si le ofrezco un 50% de descuento durante 3 meses?`,
+      de: `Ich verstehe. Was, wenn ich Ihnen 50% Rabatt für 3 Monate anbiete?`,
+      it: `Capisco. E se le offrissi il 50% di sconto per 3 mesi?`,
     });
+    emit({ speaker: 'agent', text: offerTurn });
     await this.pause(1500);
 
-    // Still firm
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    await nopeSay(
+      this.loc(lang, {
         en: `No thank you, that's kind but I really want to cancel my subscription today.`,
         fr: `Non merci, c'est gentil mais je souhaite vraiment résilier mon abonnement aujourd'hui.`,
         es: `No gracias, es amable pero realmente quiero cancelar mi suscripción hoy.`,
         de: `Nein danke, das ist nett, aber ich möchte mein Abonnement wirklich heute kündigen.`,
         it: `No grazie, è gentile ma desidero davvero disdire il mio abbonamento oggi.`,
       }),
+      offerTurn
+    );
+    await this.pause(2000);
+
+    // A real-agent question wave (only when LLM drives the call — tests true back-and-forth)
+    const questionWave = this.loc(lang, {
+      en: `Okay, sure. And just to confirm — is this the account ending in 2847, and is there anyone else on the plan I should be aware of?`,
+      fr: `D'accord. Juste pour confirmer — c'est bien le compte se terminant par 2847, et y a-t-il d'autres personnes sur le forfait dont je devrais tenir compte ?`,
+      es: `De acuerdo. Solo para confirmar — ¿es la cuenta que termina en 2847, y hay alguien más en el plan que deba tener en cuenta?`,
+      de: `In Ordnung. Nur zur Bestätigung — ist das das Konto mit der Endung 2847, und gibt es noch jemanden im Tarif, den ich berücksichtigen sollte?`,
+      it: `Va bene. Solo per confermare — è il conto che termina con 2847, e c'è qualcun altro nel piano di cui dovrei tenere conto?`,
     });
+    emit({ speaker: 'agent', text: questionWave });
+    await this.pause(1500);
+
+    await nopeSay(
+      this.loc(lang, {
+        en: `Yes, that's the right account, and no, it's just me on the plan. Please go ahead and cancel it.`,
+        fr: `Oui, c'est bien le bon compte, et non, je suis seul sur le forfait. Vous pouvez procéder à la résiliation.`,
+        es: `Sí, es la cuenta correcta, y no, solo estoy yo en el plan. Puede proceder a cancelarla.`,
+        de: `Ja, das ist das richtige Konto, und nein, ich bin allein im Tarif. Bitte kündigen Sie es.`,
+        it: `Sì, è il conto giusto, e no, sono solo io nel piano. Può procedere con la disdetta.`,
+      }),
+      questionWave
+    );
     await this.pause(2000);
 
     // Success
     const ref = this.randomRef();
-    emit({
-      speaker: 'agent',
-      text: this.loc(lang, {
-        en: `Alright, I'll process the cancellation. Your subscription will remain active until the end of your billing period. Your confirmation number is NP-${ref}.`,
-        fr: `D'accord, je procède à la résiliation. Votre abonnement sera effectif jusqu'à la fin de votre période. Votre numéro de confirmation est NP-${ref}.`,
-        es: `De acuerdo, procedo con la cancelación. Su suscripción seguirá activa hasta el final del período de facturación. Su número de confirmación es NP-${ref}.`,
-        de: `In Ordnung, ich veranlasse die Kündigung. Ihr Abonnement bleibt bis zum Ende des Abrechnungszeitraums aktiv. Ihre Bestätigungsnummer ist NP-${ref}.`,
-        it: `Va bene, procedo con la disdetta. Il suo abbonamento resterà attivo fino alla fine del periodo di fatturazione. Il suo numero di conferma è NP-${ref}.`,
-      }),
+    const successTurn = this.loc(lang, {
+      en: `Alright, I'll process the cancellation. Your subscription will remain active until the end of your billing period. Your confirmation number is NP-${ref}.`,
+      fr: `D'accord, je procède à la résiliation. Votre abonnement sera effectif jusqu'à la fin de votre période. Votre numéro de confirmation est NP-${ref}.`,
+      es: `De acuerdo, procedo con la cancelación. Su suscripción seguirá activa hasta el final del período de facturación. Su número de confirmación es NP-${ref}.`,
+      de: `In Ordnung, ich veranlasse die Kündigung. Ihr Abonnement bleibt bis zum Ende des Abrechnungszeitraums aktiv. Ihre Bestätigungsnummer ist NP-${ref}.`,
+      it: `Va bene, procedo con la disdetta. Il suo abbonamento resterà attivo fino alla fine del periodo di fatturazione. Il suo numero di conferma è NP-${ref}.`,
     });
+    emit({ speaker: 'agent', text: successTurn });
     await this.pause(1500);
 
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    await nopeSay(
+      this.loc(lang, {
         en: `Perfect, thank you very much ${agent}. Have a great day.`,
         fr: `Parfait, merci beaucoup ${agent}. Bonne journée.`,
         es: `Perfecto, muchas gracias ${agent}. Que tenga un buen día.`,
         de: `Perfekt, vielen Dank ${agent}. Einen schönen Tag noch.`,
         it: `Perfetto, grazie mille ${agent}. Buona giornata.`,
       }),
-    });
+      successTurn
+    );
     await this.pause(500);
 
     emit({

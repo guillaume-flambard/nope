@@ -120,6 +120,22 @@ export class NopeAgent {
     task: CallTask, strategy: any, transcript: TranscriptEntry[],
     startTime: number, caller: Caller
   ): Promise<CallResult> {
+    // ── Voice pipeline for natural, LLM-driven replies in simulation ──
+    const pipeline = new VoicePipeline({ language: task.language });
+
+    // LLM callback: reply naturally to the agent's turn, using the conversation history.
+    const llmReply = async (
+      agentTurn: string,
+      history: Array<{ role: string; content: string }>
+    ): Promise<string> => {
+      if (!agentTurn) return '';
+      const systemPrompt = pipeline.buildSystemPrompt(strategy as any, {
+        company: task.company || 'the service',
+        history: [],
+      });
+      return pipeline.generateResponse(systemPrompt, history);
+    };
+
     const result = await caller.simulate(task, strategy, (event) => {
       transcript.push({
         timestamp: new Date(),
@@ -131,7 +147,7 @@ export class NopeAgent {
       if (event.statusChange) {
         this.emitStatus(task.id, event.statusChange);
       }
-    });
+    }, llmReply);
 
     const duration = (Date.now() - startTime) / 1000;
     const callResult = this.buildResult(
