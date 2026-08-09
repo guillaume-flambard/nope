@@ -95,6 +95,17 @@
 - **Args** : `bun run scripts/demo-dialogue.ts --lang fr --company Canal+ --goal "..."` (gère `--lang fr`
   et `--lang=fr`).
 
+## Fix: TTS open-source de qualité ElevenLabs — Kokoro (2026-08-09)
+- **Mission** : concurrencer ElevenLabs à partir de zéro, gratuitement. Leur modèle est propriétaire
+  (impossible à cloner), mais **Kokoro-82M** (open-source, ~82M params) approche la qualité commerciale.
+- **Install** : `/tmp/tts-sota` venv → `pip install kokoro misaki transformers soundfile scipy num2words spacy phonemizer` + `brew install espeak-ng`. Kokoro seul = EN ; misaki[lang] pour les autres langues (mais misaki[en] tire spacy qui casse sous Py3.14 → installer spacy seul via wheel).
+- **Run** : `/tmp/tts-sota/bin/python scripts/tts/kokoro_say.py <voice> <text> <out.wav> <lang>` sur MPS (Metal). Voix : af_heart (femme EN), am_michael (homme EN), bf_emma (femme FR), bm_george (homme FR).
+- **Intégration** : `scripts/demo-dialogue.ts` — Kokoro = voix PRINCIPALE (devant Piper, Orpheus, Edge).
+  Deux voix distinctes par langue (agent + NOPE). Les audio-tags émis par le LLM sont rendus en pauses.
+- **Checklist** : (1) venv + deps, (2) test voix FR/EN, (3) `npm run demo` utilise Kokoro.
+- **Limites** : 82M params — très bon mais pas le niveau v3 complet. Pour "tuer ElevenLabs" il faudrait
+  entraîner un modèle plus gros (ou Chatterbox/Zonos). Kokoro est le meilleur ratio qualité/effort.
+
 ## Mémo live probe Twilio (T7 — 2026-08-09)
 - Clés présentes ? (OPENAI + TWILIO) : **NON** — aucun `.env`, aucune clé dans `~/.secrets/`.
 - Appel réel initié ? : **NON**
