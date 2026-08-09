@@ -33,6 +33,9 @@
 | T11 simu LLM + IVR digits | simulate + tests | ✅ LLM pilote la simulation (fini les répliques figées), saisie chiffres abonné (enter_digits, EN/FR/ES/DE/IT, DTMF live), répond aux questions multi-parties. 92 tests |
 | T12 natural-voice skill | skill créé | ✅ skill `natural-voice` (~/.config/opencode) : conversation analysis, politeness (B&L), rhétorique (Aristote), fluencemes, prosodie TTS, vocabulaires natifs par langue |
 | T13 natural-speech engine | module + tests | ✅ `natural-speech.ts` : profils EN/FR/ES/DE/IT (fillers/hedges/disfluencies/backchannels/closers/exemples/culture), injectés dans le prompt. Testé 5 langues + FR 6-tours. 96 tests |
+| T14 LLM toutes stratégies | caller | ✅ negotiate + general pilotés par LLM (plus que cancel). Fallback local par langue (zéro silence). 104 tests |
+| T15 AgentVoice + identité | caller/agent-voice | ✅ agent humain varié par langue (openings/offres/questions/relances/confirms) + rebond. Identité configurable NOPE_NAME, sinon esquive polie (jamais d'invention). 104 tests |
+| T16 démo 2 voix | scripts/demo-dialogue.ts | ✅ dialogue complet agent+NOPE (2 voix Orpheus), LLM-driven, varié, rebondissant, stable (fallbacks). `npm run demo`. ⚠ quota TTS Groq ~3600 tok/jour |
 
 ## Post-bet — voix naturelle (2026-08-09)
 - **Problème** : les réponses étaient figées (même phrase à chaque tour), pas de rebond sur l'agent humain, ton "écrit".

@@ -85,6 +85,16 @@
   identité au prompt si on veut un personnage cohérent. (2) Groq multilingue mélange parfois
   (ex: "subscription" en italien au lieu de "abbonamento") — vérifier sur les langues secondaires.
 
+## Fix: démo 2 voix + quota TTS Groq (2026-08-09)
+- **Démo** : `scripts/demo-dialogue.ts` (`npm run demo`) — dialogue complet agent+NOPE, LLM-driven
+  (varié + rebond), 2 voix Orpheus distinctes (agent=austin, NOPE=diana), concaténées en 1 WAV.
+  Stable : fallback transcript si LLM/TTS échoue (jamais de fichier cassé).
+- **⚠ Quota TTS Groq** : Orpheus free = ~3600 tokens/jour (testé : 3589/3600 épuisés en une session
+  de tests). Après épuisement → `Rate limit reached ... try again in 20m`. Limiter les générations
+  de démo, ou passer Dev Tier (payant) pour plus de tokens.
+- **Args** : `bun run scripts/demo-dialogue.ts --lang fr --company Canal+ --goal "..."` (gère `--lang fr`
+  et `--lang=fr`).
+
 ## Mémo live probe Twilio (T7 — 2026-08-09)
 - Clés présentes ? (OPENAI + TWILIO) : **NON** — aucun `.env`, aucune clé dans `~/.secrets/`.
 - Appel réel initié ? : **NON**
