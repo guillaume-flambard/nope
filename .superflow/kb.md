@@ -20,8 +20,10 @@
   (`POST /api/applications` → 201).
 - **Note** : même pattern probable sur d'autres SPAs (Vue 3, Nuxt) — tester requestSubmit d'abord.
 
-## Mémo live probe Twilio (à remplir après T7)
-- Clés présentes ? (OPENAI + TWILIO) : ___
-- Appel réel initié ? : ___
-- Ce qui a bloqué : ___
-- Verdict : ___ (PIVOT démo simulée si bloqué)
+## Mémo live probe Twilio (T7 — 2026-08-09)
+- Clés présentes ? (OPENAI + TWILIO) : **NON** — aucun `.env`, aucune clé dans `~/.secrets/`.
+- Appel réel initié ? : **NON**
+- Ce qui a bloqué : pas de clés Twilio/OpenAI (probe ne peut pas partir). Kill-criteria déclenché.
+- Verdict : **PIVOT vers démo simulée** (G1/G2 verts). Le live mode est codé (twilio-stream mulaw,
+  caller.ts), reste à tester quand des clés existeront. Procédure : `cp .env.example .env`, remplir
+  OPENAI_API_KEY + TWILIO_* (+ Deepgram/ElevenLabs en option), puis `bun run src/cli.ts call "..." --live`.
