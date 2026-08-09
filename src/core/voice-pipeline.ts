@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════
 
 import { VoicePipelineConfig, Language, Strategy, TranscriptEntry } from './types';
-import { buildNaturalSpeechSection } from './natural-speech';
+import { buildNaturalSpeechSection, localFallback } from './natural-speech';
 
 // ── Timeout utility ──
 
@@ -114,7 +114,8 @@ export class VoicePipeline {
       if (fallback) {
         try { return await withTimeout(fallback(), 8_000, 'LLM fallback'); } catch (_) {}
       }
-      return '';
+      // Never leave the agent mute: local spoken fallback in the conversation language.
+      return localFallback(this.config.language);
     }
   }
 
@@ -271,6 +272,13 @@ export class VoicePipeline {
       it: `Sei un cliente vero che chiama ${context.company} al telefono. Parli come una persona normale al telefono, NON come testo scritto o un robot.`,
     };
     const persona = personaMap[lang] || personaMap.en;
+    const identityName = (process.env.NOPE_NAME || '').trim();
+    // Identity guard: a real person has a constant name, never invents one.
+    const identityBlock = identityName
+      ? `\nYOUR NAME IS ${identityName}. If asked, give this name. Never use any other name.`
+      : (lang === 'fr'
+        ? `\nTu n'as PAS de nom à donner. Si on te demande ton nom, esquive poliment ("Oh, c'est nécessaire ? Je préfère ne pas le dire, si ça ne vous dérange pas") — ne l'invente JAMAIS.`
+        : `\nYou have NO name to give. If asked your name, deflect politely ("Oh, is that really needed? I'd rather not say, if that's okay") — NEVER invent one.`);
 
     const rulesMap: Record<string, string> = {
       en: `
@@ -379,7 +387,7 @@ COMPORTAMENTO:
     const rules = rulesMap[lang] || rulesMap.en;
     const naturalBlock = buildNaturalSpeechSection(lang, new Set());
 
-    return `${persona}
+    return `${persona}${identityBlock}
 
 GOAL: ${strategy.type}
 ${strategy.systemPrompt}

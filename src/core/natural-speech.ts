@@ -114,6 +114,39 @@ export function getNaturalProfile(lang: Language): NaturalProfile {
   return PROFILES[lang] || PROFILES.en;
 }
 
+/** Local spoken fallback when the LLM is down — never leave the agent mute. */
+export function localFallback(lang: Language): string {
+  const lines: Record<Language, string[]> = {
+    en: [
+      "Okay, just a moment... right, so, that's what I was saying.",
+      "Yeah... I mean, you know, let's keep it simple here.",
+      "Right... so, yeah, that should work.",
+    ],
+    fr: [
+      "Euh... voilà, c'est à peu près ça.",
+      "Ben oui... enfin, vous voyez ce que je veux dire.",
+      "D'accord... bon, voilà, je pense que c'est ça.",
+    ],
+    es: [
+      "Bueno... pues, sí, eso es lo que digo.",
+      "Mira... es que, en fin, ya ve usted.",
+      "Vale... o sea, sí, eso es.",
+    ],
+    de: [
+      "Ähm... ja, also, genau das meine ich.",
+      "Gut... na ja, Sie verstehen schon.",
+      "Also... ja, so ist es.",
+    ],
+    it: [
+      "Ehm... ecco, sì, è quello che dico.",
+      "Be'... cioè, vede, è così.",
+      "Va bene... cioè, sì, ecco.",
+    ],
+  };
+  const pool = lines[lang] || lines.en;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 /** Build the per-language "natural speech" block injected into the system prompt. */
 export function buildNaturalSpeechSection(lang: Language, usedFillers: Set<string>): string {
   const p = getNaturalProfile(lang);

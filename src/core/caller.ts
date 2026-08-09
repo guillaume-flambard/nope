@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════
 
 import { CallTask, CallStatus, Language, Strategy } from './types';
+import { AgentVoice, accountEnding } from './agent-voice';
 
 interface SimEvent {
   speaker: 'nope' | 'agent' | 'ivr' | 'system';
@@ -228,9 +229,9 @@ export class Caller {
       case 'cancel':
         return await this.simulateCancel(task, agentName, lang, onEvent, llm);
       case 'negotiate':
-        return await this.simulateNegotiate(task, agentName, lang, onEvent);
+        return await this.simulateNegotiate(task, agentName, lang, onEvent, llm);
       default:
-        return await this.simulateGeneral(task, agentName, lang, onEvent);
+        return await this.simulateGeneral(task, agentName, lang, onEvent, llm);
     }
   }
 
@@ -241,6 +242,7 @@ export class Caller {
   ): Promise<SimResult> {
     const company = task.company || 'the service';
     const history: Array<{ role: string; content: string }> = [];
+    const agentVoice = new AgentVoice(lang);
 
     /** Emit NOPE's spoken reply: LLM if available (natural, varied, responsive), else scripted fallback. */
     const nopeSay = async (fallback: string, agentTurn: string): Promise<void> => {
@@ -271,13 +273,7 @@ export class Caller {
     await this.pause(2000);
 
     // Retention attempt 1 — "why?"
-    const whyTurn = this.loc(lang, {
-      en: `I understand. May I ask why? We might have an offer that could interest you...`,
-      fr: `Je comprends. Puis-je vous demander la raison ? Nous avons peut-être une offre qui pourrait vous intéresser...`,
-      es: `Entiendo. ¿Puedo preguntarle el motivo? Quizás tengamos una oferta que pueda interesarle...`,
-      de: `Ich verstehe. Darf ich nach dem Grund fragen? Vielleicht haben wir ein Angebot, das Sie interessieren könnte...`,
-      it: `Capisco. Posso chiederle il motivo? Forse abbiamo un'offerta che potrebbe interessarla...`,
-    });
+    const whyTurn = agentVoice.askWhy();
     emit({ speaker: 'agent', text: whyTurn });
     await this.pause(2000);
 
@@ -293,14 +289,8 @@ export class Caller {
     );
     await this.pause(2000);
 
-    // Retention attempt 2 — "50% off"
-    const offerTurn = this.loc(lang, {
-      en: `I understand. What if I offered you 50% off for 3 months?`,
-      fr: `Je comprends. Et si je vous proposais 50% de réduction pendant 3 mois ?`,
-      es: `Entiendo. ¿Y si le ofrezco un 50% de descuento durante 3 meses?`,
-      de: `Ich verstehe. Was, wenn ich Ihnen 50% Rabatt für 3 Monate anbiete?`,
-      it: `Capisco. E se le offrissi il 50% di sconto per 3 mesi?`,
-    });
+    // Retention attempt 2 — a discount offer
+    const offerTurn = agentVoice.offer();
     emit({ speaker: 'agent', text: offerTurn });
     await this.pause(1500);
 
@@ -316,14 +306,8 @@ export class Caller {
     );
     await this.pause(2000);
 
-    // A real-agent question wave (only when LLM drives the call — tests true back-and-forth)
-    const questionWave = this.loc(lang, {
-      en: `Okay, sure. And just to confirm — is this the account ending in 2847, and is there anyone else on the plan I should be aware of?`,
-      fr: `D'accord. Juste pour confirmer — c'est bien le compte se terminant par 2847, et y a-t-il d'autres personnes sur le forfait dont je devrais tenir compte ?`,
-      es: `De acuerdo. Solo para confirmar — ¿es la cuenta que termina en 2847, y hay alguien más en el plan que deba tener en cuenta?`,
-      de: `In Ordnung. Nur zur Bestätigung — ist das das Konto mit der Endung 2847, und gibt es noch jemanden im Tarif, den ich berücksichtigen sollte?`,
-      it: `Va bene. Solo per confermare — è il conto che termina con 2847, e c'è qualcun altro nel piano di cui dovrei tenere conto?`,
-    });
+    // A real-agent question wave (varied; tests true back-and-forth)
+    const questionWave = agentVoice.question(accountEnding());
     emit({ speaker: 'agent', text: questionWave });
     await this.pause(1500);
 
@@ -341,13 +325,7 @@ export class Caller {
 
     // Success
     const ref = this.randomRef();
-    const successTurn = this.loc(lang, {
-      en: `Alright, I'll process the cancellation. Your subscription will remain active until the end of your billing period. Your confirmation number is NP-${ref}.`,
-      fr: `D'accord, je procède à la résiliation. Votre abonnement sera effectif jusqu'à la fin de votre période. Votre numéro de confirmation est NP-${ref}.`,
-      es: `De acuerdo, procedo con la cancelación. Su suscripción seguirá activa hasta el final del período de facturación. Su número de confirmación es NP-${ref}.`,
-      de: `In Ordnung, ich veranlasse die Kündigung. Ihr Abonnement bleibt bis zum Ende des Abrechnungszeitraums aktiv. Ihre Bestätigungsnummer ist NP-${ref}.`,
-      it: `Va bene, procedo con la disdetta. Il suo abbonamento resterà attivo fino alla fine del periodo di fatturazione. Il suo numero di conferma è NP-${ref}.`,
-    });
+    const successTurn = agentVoice.confirm(`NP-${ref}`);
     emit({ speaker: 'agent', text: successTurn });
     await this.pause(1500);
 
@@ -386,72 +364,84 @@ export class Caller {
 
   private async simulateNegotiate(
     task: CallTask, agent: string, lang: Language,
-    emit: (e: SimEvent) => void
+    emit: (e: SimEvent) => void,
+    llm?: (agentTurn: string, history: Array<{ role: string; content: string }>) => Promise<string>
   ): Promise<SimResult> {
     const company = task.company || 'the service';
     const savingsAmount = Math.floor(Math.random() * 15 + 10);
+    const history: Array<{ role: string; content: string }> = [];
 
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    const nopeSay = async (fallback: string, agentTurn: string): Promise<void> => {
+      if (agentTurn) history.push({ role: 'user', content: agentTurn });
+      let reply = fallback;
+      if (llm) {
+        try {
+          const r = await llm(agentTurn, history);
+          if (r && r.trim()) reply = r.trim();
+        } catch (_) { /* fallback */ }
+      }
+      history.push({ role: 'assistant', content: reply });
+      emit({ speaker: 'nope', text: reply, statusChange: 'negotiating' });
+    };
+
+    // Opening
+    await nopeSay(
+      this.loc(lang, {
         en: `Hi ${agent}. I've been a loyal ${company} customer and my bill seems quite high. Are there any better deals available?`,
         fr: `Bonjour ${agent}. Je suis client ${company} depuis longtemps et je trouve ma facture un peu élevée. Y a-t-il des offres plus avantageuses ?`,
         es: `Hola ${agent}. Soy cliente fiel de ${company} y mi factura parece bastante alta. ¿Hay alguna oferta mejor disponible?`,
         de: `Hallo ${agent}. Ich bin langjähriger ${company}-Kunde und meine Rechnung scheint ziemlich hoch. Gibt es bessere Angebote?`,
         it: `Buongiorno ${agent}. Sono un cliente fedele di ${company} e la mia bolletta sembra piuttosto alta. Ci sono offerte migliori disponibili?`,
       }),
-      statusChange: 'negotiating',
-    });
+      ''
+    );
     await this.pause(2000);
 
-    emit({
-      speaker: 'agent',
-      text: this.loc(lang, {
-        en: `Let me look at your account... You're currently on the standard plan. Unfortunately, that's already our best rate.`,
-        fr: `Je vais regarder votre compte... Vous êtes actuellement sur le forfait standard. Malheureusement, c'est déjà notre meilleur tarif.`,
-        es: `Déjeme revisar su cuenta... Actualmente tiene el plan estándar. Desafortunadamente, ya es nuestra mejor tarifa.`,
-        de: `Lassen Sie mich Ihr Konto prüfen... Sie haben derzeit den Standardtarif. Leider ist das bereits unser bestes Angebot.`,
-        it: `Mi lasci controllare il suo conto... Attualmente ha il piano standard. Purtroppo, è già la nostra tariffa migliore.`,
-      }),
+    // Agent: best rate already
+    const bestRateTurn = this.loc(lang, {
+      en: `Let me look at your account... You're currently on the standard plan. Unfortunately, that's already our best rate.`,
+      fr: `Je vais regarder votre compte... Vous êtes actuellement sur le forfait standard. Malheureusement, c'est déjà notre meilleur tarif.`,
+      es: `Déjeme revisar su cuenta... Actualmente tiene el plan estándar. Desafortunadamente, ya es nuestra mejor tarifa.`,
+      de: `Lassen Sie mich Ihr Konto prüfen... Sie haben derzeit den Standardtarif. Leider ist das bereits unser bestes Angebot.`,
+      it: `Mi lasci controllare il suo conto... Attualmente ha il piano standard. Purtroppo, è già la nostra tariffa migliore.`,
     });
+    emit({ speaker: 'agent', text: bestRateTurn });
     await this.pause(2000);
 
-    // Competitor mention tactic
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    // Competitor mention tactic (LLM-driven, varies)
+    await nopeSay(
+      this.loc(lang, {
         en: `That's a shame. I've noticed competitors are offering some attractive deals right now... I'm wondering if I should switch.`,
         fr: `Ah, c'est dommage. J'ai vu que la concurrence propose des offres intéressantes en ce moment... Je me demande si je ne devrais pas changer.`,
         es: `Qué lástima. He visto que la competencia ofrece ofertas atractivas ahora mismo... Me pregunto si debería cambiar.`,
         de: `Das ist schade. Mir ist aufgefallen, dass die Konkurrenz gerade attraktive Angebote hat... Ich überlege, ob ich wechseln sollte.`,
         it: `Che peccato. Ho notato che la concorrenza offre promozioni interessanti in questo momento... Mi chiedo se dovrei cambiare.`,
       }),
-    });
+      bestRateTurn
+    );
     await this.pause(2500);
 
     // Agent offers deal
-    emit({
-      speaker: 'agent',
-      text: this.loc(lang, {
-        en: `Hold on, let me check... Actually, I can offer you a ${savingsAmount}% discount on your plan for 12 months. Would that work?`,
-        fr: `Attendez, laissez-moi vérifier... En fait, je peux vous proposer une réduction de ${savingsAmount}% sur votre forfait pendant 12 mois. Ça vous conviendrait ?`,
-        es: `Espere, déjeme verificar... De hecho, puedo ofrecerle un ${savingsAmount}% de descuento en su plan durante 12 meses. ¿Le parece bien?`,
-        de: `Moment, lassen Sie mich nachsehen... Tatsächlich kann ich Ihnen ${savingsAmount}% Rabatt auf Ihren Tarif für 12 Monate anbieten. Wäre das in Ordnung?`,
-        it: `Un momento, mi lasci verificare... In effetti, posso offrirle uno sconto del ${savingsAmount}% sul suo piano per 12 mesi. Le andrebbe bene?`,
-      }),
+    const offerTurn = this.loc(lang, {
+      en: `Hold on, let me check... Actually, I can offer you a ${savingsAmount}% discount on your plan for 12 months. Would that work?`,
+      fr: `Attendez, laissez-moi vérifier... En fait, je peux vous proposer une réduction de ${savingsAmount}% sur votre forfait pendant 12 mois. Ça vous conviendrait ?`,
+      es: `Espere, déjeme verificar... De hecho, puedo ofrecerle un ${savingsAmount}% de descuento en su plan durante 12 meses. ¿Le parece bien?`,
+      de: `Moment, lassen Sie mich nachsehen... Tatsächlich kann ich Ihnen ${savingsAmount}% Rabatt auf Ihren Tarif für 12 Monate anbieten. Wäre das in Ordnung?`,
+      it: `Un momento, mi lasci verificare... In effetti, posso offrirle uno sconto del ${savingsAmount}% sul suo piano per 12 mesi. Le andrebbe bene?`,
     });
+    emit({ speaker: 'agent', text: offerTurn });
     await this.pause(1500);
 
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    await nopeSay(
+      this.loc(lang, {
         en: `Yes, that works for me. Thank you for the effort!`,
         fr: `Oui, ça me convient. Merci beaucoup pour cet effort !`,
         es: `Sí, me parece bien. ¡Gracias por el esfuerzo!`,
         de: `Ja, das passt für mich. Vielen Dank für die Mühe!`,
         it: `Sì, va bene per me. Grazie per l'impegno!`,
       }),
-    });
+      offerTurn
+    );
     await this.pause(1000);
 
     const ref = this.randomRef();
@@ -491,32 +481,57 @@ export class Caller {
 
   private async simulateGeneral(
     task: CallTask, agent: string, lang: Language,
-    emit: (e: SimEvent) => void
+    emit: (e: SimEvent) => void,
+    llm?: (agentTurn: string, history: Array<{ role: string; content: string }>) => Promise<string>
   ): Promise<SimResult> {
-    emit({
-      speaker: 'nope',
-      text: this.loc(lang, {
+    const history: Array<{ role: string; content: string }> = [];
+    const nopeSay = async (fallback: string, agentTurn: string): Promise<void> => {
+      if (agentTurn) history.push({ role: 'user', content: agentTurn });
+      let reply = fallback;
+      if (llm) {
+        try {
+          const r = await llm(agentTurn, history);
+          if (r && r.trim()) reply = r.trim();
+        } catch (_) { /* fallback */ }
+      }
+      history.push({ role: 'assistant', content: reply });
+      emit({ speaker: 'nope', text: reply });
+    };
+
+    await nopeSay(
+      this.loc(lang, {
         en: `Hi ${agent}. ${task.goal}`,
         fr: `Bonjour ${agent}. ${task.goal}`,
         es: `Hola ${agent}. ${task.goal}`,
         de: `Hallo ${agent}. ${task.goal}`,
         it: `Buongiorno ${agent}. ${task.goal}`,
       }),
-    });
+      ''
+    );
     await this.pause(2000);
 
     const ref = this.randomRef();
-    emit({
-      speaker: 'agent',
-      text: this.loc(lang, {
-        en: `Of course, I'll take care of that. Your request has been logged under reference NP-${ref}.`,
-        fr: `Bien sûr, je vais m'en occuper. C'est noté, votre demande a été enregistrée sous la référence NP-${ref}.`,
-        es: `Por supuesto, me encargo de ello. Su solicitud ha sido registrada con la referencia NP-${ref}.`,
-        de: `Natürlich, ich kümmere mich darum. Ihre Anfrage wurde unter der Referenz NP-${ref} erfasst.`,
-        it: `Certamente, me ne occupo io. La sua richiesta è stata registrata con il riferimento NP-${ref}.`,
-      }),
+    const confirmTurn = this.loc(lang, {
+      en: `Of course, I'll take care of that. Your request has been logged under reference NP-${ref}.`,
+      fr: `Bien sûr, je vais m'en occuper. C'est noté, votre demande a été enregistrée sous la référence NP-${ref}.`,
+      es: `Por supuesto, me encargo de ello. Su solicitud ha sido registrada con la referencia NP-${ref}.`,
+      de: `Natürlich, ich kümmere mich darum. Ihre Anfrage wurde unter der Referenz NP-${ref} erfasst.`,
+      it: `Certamente, me ne occupo io. La sua richiesta è stata registrata con il riferimento NP-${ref}.`,
     });
+    emit({ speaker: 'agent', text: confirmTurn });
     await this.pause(1000);
+
+    await nopeSay(
+      this.loc(lang, {
+        en: `Perfect, thank you very much ${agent}. Have a great day.`,
+        fr: `Parfait, merci beaucoup ${agent}. Bonne journée.`,
+        es: `Perfecto, muchas gracias ${agent}. Que tenga un buen día.`,
+        de: `Perfekt, vielen Dank ${agent}. Einen schönen Tag noch.`,
+        it: `Perfetto, grazie mille ${agent}. Buona giornata.`,
+      }),
+      confirmTurn
+    );
+    await this.pause(500);
 
     emit({
       speaker: 'system',
