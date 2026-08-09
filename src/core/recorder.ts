@@ -2,7 +2,7 @@
 // NOPE. — Call Recorder (Persistence)
 // ═══════════════════════════════════════
 
-import { mkdir, writeFile, readFile, readdir } from 'fs/promises';
+import { mkdir, writeFile, readFile, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
 import { CallResult, CallTask } from './types';
@@ -97,5 +97,37 @@ export class CallRecorder {
     // Most recent first
     summaries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return summaries;
+  }
+
+  /** Delete a single call record by taskId. Returns true if deleted. */
+  async delete(taskId: string): Promise<boolean> {
+    try {
+      await unlink(join(this.dir, `${taskId}.json`));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Delete all call records. Returns number of records deleted. */
+  async clear(): Promise<number> {
+    let files: string[];
+    try {
+      files = await readdir(this.dir);
+    } catch {
+      return 0;
+    }
+
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    let deleted = 0;
+    for (const file of jsonFiles) {
+      try {
+        await unlink(join(this.dir, file));
+        deleted++;
+      } catch {
+        // Skip files that can't be deleted
+      }
+    }
+    return deleted;
   }
 }

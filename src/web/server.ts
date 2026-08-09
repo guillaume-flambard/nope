@@ -11,6 +11,7 @@ import { NopeAgent } from '../core/agent';
 import { CompanyFinder } from '../lookup/company-finder';
 import { NopeEvent } from '../core/types';
 import { getStream } from '../core/twilio-stream';
+import { CallRecorder } from '../core/recorder';
 import { logger } from '../core/logger';
 
 const app = express();
@@ -189,6 +190,23 @@ app.get('/api/call/:id', (req, res) => {
 app.get('/api/companies', (_req, res) => {
   const finder = new CompanyFinder();
   res.json({ companies: finder.list() });
+});
+
+/** GET /api/history — List past calls */
+app.get('/api/history', async (_req, res) => {
+  const recorder = new CallRecorder();
+  const calls = await recorder.list();
+  res.json({ calls });
+});
+
+/** GET /api/history/:taskId — Full call record */
+app.get('/api/history/:taskId', async (req, res) => {
+  const recorder = new CallRecorder();
+  const record = await recorder.load(req.params.taskId);
+  if (!record) {
+    return res.status(404).json({ error: 'Record not found' });
+  }
+  res.json(record);
 });
 
 /** GET /api/health — Health check */

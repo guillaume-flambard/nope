@@ -1,0 +1,57 @@
+name: Feature Request
+description: Got an idea? We're listening.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Life's too short for hold music — tell us how to make NOPE. better.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What do you want NOPE. to do?
+      description: Describe the feature clearly.
+      placeholder: "It would be great if NOPE. could also handle insurance claims..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Why is this useful?
+      description: What problem does this solve? Who benefits?
+      placeholder: "I spend 45 minutes every time I need to file a claim with my insurance company."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - New strategy (cancel, negotiate, etc.)
+        - New company / country
+        - New language
+        - CLI improvement
+        - Web UI improvement
+        - Voice pipeline
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you thought of other ways to solve this?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Would you like to contribute this?
+      options:
+        - label: I'd like to implement this myself (PR welcome!)

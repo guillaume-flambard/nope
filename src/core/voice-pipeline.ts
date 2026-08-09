@@ -370,7 +370,7 @@ TACTICS: ${strategy.tactics.join(', ')}
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6-20250514',
         max_tokens: 150,
         system: systemPrompt,
         messages: history.map(h => ({ role: h.role, content: h.content })),

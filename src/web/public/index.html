@@ -28,14 +28,29 @@
   .logo { font-family:var(--mono); font-weight:800; font-size:2.5rem; color:var(--green); letter-spacing:-0.03em; }
   .logo span { color:var(--text-dim); }
   .tagline { color:var(--text-muted); font-size:0.9rem; margin-top:0.25rem; }
-  .mode-badge {
-    display:inline-flex; align-items:center; gap:6px;
-    background:var(--green-bg); border:1px solid rgba(181,255,74,0.15);
-    padding:4px 12px; border-radius:100px; font-family:var(--mono);
-    font-size:0.7rem; color:var(--green); margin-top:0.75rem;
+
+  /* ── Mode Toggle ── */
+  .mode-toggle {
+    display:inline-flex; align-items:center; gap:10px;
+    margin-top:0.75rem; cursor:pointer; user-select:none;
   }
-  .mode-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:blink 2s ease-in-out infinite; }
-  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .mode-toggle input { display:none; }
+  .toggle-track {
+    width:36px; height:20px; border-radius:10px; background:var(--border-lite);
+    position:relative; transition:background 0.2s;
+  }
+  .toggle-track::after {
+    content:''; position:absolute; top:2px; left:2px;
+    width:16px; height:16px; border-radius:50%; background:var(--text-muted);
+    transition:all 0.2s;
+  }
+  .mode-toggle input:checked + .toggle-track { background:var(--rose); }
+  .mode-toggle input:checked + .toggle-track::after { left:18px; background:var(--text); }
+  .mode-label {
+    font-family:var(--mono); font-size:0.7rem; letter-spacing:0.05em;
+  }
+  .mode-label.sim { color:var(--green); }
+  .mode-label.live { color:var(--rose); }
 
   /* ── Input Area ── */
   .input-area {
@@ -95,6 +110,7 @@
   .status-dot.success { background:var(--green); }
   .status-dot.failed { background:var(--rose); }
   .status-dot.ended { background:var(--text-dim); }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
   .status-text { font-family:var(--mono); font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; }
   .call-timer { font-family:var(--mono); font-size:0.8rem; color:var(--text-dim); }
@@ -152,6 +168,59 @@
   }
   .new-call-btn:hover { border-color:var(--text-dim); color:var(--text); }
 
+  /* ── History Panel ── */
+  .history-panel {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; margin-top:1.5rem; overflow:hidden;
+  }
+  .history-header {
+    padding:1rem 1.25rem; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border); cursor:pointer;
+  }
+  .history-header:hover { background:var(--surface-2); }
+  .history-title { font-family:var(--mono); font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.1em; }
+  .history-toggle { font-size:0.7rem; color:var(--text-dim); transition:transform 0.2s; }
+  .history-toggle.open { transform:rotate(180deg); }
+  .history-list { display:none; max-height:300px; overflow-y:auto; }
+  .history-list.open { display:block; }
+  .history-list::-webkit-scrollbar { width:4px; }
+  .history-list::-webkit-scrollbar-thumb { background:var(--border-lite); border-radius:4px; }
+  .history-empty { padding:1.25rem; text-align:center; color:var(--text-dim); font-size:0.85rem; }
+  .history-item {
+    padding:0.75rem 1.25rem; border-bottom:1px solid var(--border);
+    cursor:pointer; transition:background 0.15s;
+  }
+  .history-item:last-child { border-bottom:none; }
+  .history-item:hover { background:var(--surface-2); }
+  .history-item-row { display:flex; align-items:center; gap:8px; }
+  .history-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .history-dot.success { background:var(--green); }
+  .history-dot.partial { background:var(--amber); }
+  .history-dot.failed { background:var(--rose); }
+  .history-company { font-size:0.85rem; color:var(--text); flex:1; }
+  .history-date { font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); }
+  .history-goal { font-size:0.78rem; color:var(--text-dim); margin-top:2px; margin-left:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* ── History Detail ── */
+  .history-detail {
+    display:none; background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; padding:1.25rem; margin-top:1rem;
+    animation:slideUp 0.3s ease-out;
+  }
+  .history-detail.active { display:block; }
+  .detail-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  .detail-title { font-family:var(--mono); font-weight:700; font-size:0.95rem; }
+  .detail-close {
+    background:transparent; border:1px solid var(--border-lite); color:var(--text-dim);
+    padding:4px 12px; border-radius:6px; font-size:0.75rem; cursor:pointer;
+    font-family:var(--mono); transition:all 0.15s;
+  }
+  .detail-close:hover { border-color:var(--text-dim); color:var(--text); }
+  .detail-meta { font-size:0.8rem; color:var(--text-dim); margin-bottom:1rem; }
+  .detail-transcript { max-height:300px; overflow-y:auto; }
+  .detail-transcript::-webkit-scrollbar { width:4px; }
+  .detail-transcript::-webkit-scrollbar-thumb { background:var(--border-lite); border-radius:4px; }
+
   /* ── Examples ── */
   .examples { margin-top:2rem; }
   .examples-title { font-family:var(--mono); font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem; }
@@ -180,7 +249,11 @@
   <header>
     <div class="logo">NOPE<span>.</span></div>
     <div class="tagline">AI that calls companies so you don't have to.</div>
-    <div class="mode-badge"><span class="mode-dot"></span> <span id="mode-label">Simulation Mode</span></div>
+    <label class="mode-toggle">
+      <input type="checkbox" id="live-toggle" onchange="updateMode()">
+      <div class="toggle-track"></div>
+      <span class="mode-label sim" id="mode-label">Simulation</span>
+    </label>
   </header>
 
   <!-- Input -->
@@ -193,7 +266,7 @@
       <button class="quick-btn" onclick="setGoal('Cancel my Netflix subscription')">Cancel Netflix</button>
       <button class="quick-btn" onclick="setGoal('Résilie mon abonnement Canal+')">Résilie Canal+</button>
       <button class="quick-btn" onclick="setGoal('Negotiate my Comcast bill')">Negotiate Comcast</button>
-      <button class="quick-btn" onclick="setGoal('Baisse ma facture SFR')">Négocie SFR</button>
+      <button class="quick-btn" onclick="setGoal('Cancela mi suscripción de Movistar')">Cancela Movistar</button>
     </div>
   </div>
 
@@ -216,6 +289,25 @@
     <div class="result-summary" id="result-summary"></div>
     <div class="result-stats" id="result-stats"></div>
     <button class="new-call-btn" onclick="resetUI()">New call</button>
+  </div>
+
+  <!-- History Detail -->
+  <div class="history-detail" id="history-detail">
+    <div class="detail-header">
+      <span class="detail-title" id="detail-title"></span>
+      <button class="detail-close" onclick="closeDetail()">close</button>
+    </div>
+    <div class="detail-meta" id="detail-meta"></div>
+    <div class="detail-transcript" id="detail-transcript"></div>
+  </div>
+
+  <!-- History Panel -->
+  <div class="history-panel" id="history-panel">
+    <div class="history-header" onclick="toggleHistory()">
+      <span class="history-title">// past calls</span>
+      <span class="history-toggle" id="history-toggle-icon">&#9660;</span>
+    </div>
+    <div class="history-list" id="history-list"></div>
   </div>
 
   <!-- Examples -->
@@ -242,22 +334,22 @@
         <div class="example-text">File complaints & get refunds</div>
         <div class="example-tag">complain</div>
       </div>
-      <div class="example-card" onclick="setGoal('Négocie ma facture EDF')">
-        <div class="example-emoji">⚡</div>
-        <div class="example-text">Négocie ta facture énergie</div>
-        <div class="example-tag">négociation</div>
+      <div class="example-card" onclick="setGoal('Kündige mein Spotify-Abo')">
+        <div class="example-emoji">🎵</div>
+        <div class="example-text">Kündige dein Abo (DE)</div>
+        <div class="example-tag">kündigung</div>
       </div>
-      <div class="example-card" onclick="setGoal('Cancel my Adobe Creative Cloud')">
-        <div class="example-emoji">🎨</div>
-        <div class="example-text">Cancel software subscriptions</div>
-        <div class="example-tag">cancel</div>
+      <div class="example-card" onclick="setGoal('Disdici il mio abbonamento Sky')">
+        <div class="example-emoji">📡</div>
+        <div class="example-text">Disdici abbonamento (IT)</div>
+        <div class="example-tag">disdetta</div>
       </div>
     </div>
   </div>
 
   <footer>
     <p>
-      <a href="https://github.com/nope-ai/nope">NOPE.</a> v0.1.0 · Open source (MIT) ·
+      <a href="https://github.com/guillaume-flambard/nope">NOPE.</a> v0.2.0 · Open source (MIT) ·
       Built by humans who hate hold music
     </p>
   </footer>
@@ -268,25 +360,72 @@
   let eventSource = null;
   let timerInterval = null;
   let startTime = null;
+  let isLiveMode = false;
+
+  // ── Safe DOM helpers ──
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function createMsgElement(speaker, text, action) {
+    const msg = document.createElement('div');
+    msg.className = 'msg';
+
+    const label = document.createElement('div');
+    label.className = 'msg-label ' + speaker;
+    label.textContent = speaker.toUpperCase();
+    msg.appendChild(label);
+
+    const body = document.createElement('div');
+    body.className = 'msg-text';
+    body.textContent = text;
+    msg.appendChild(body);
+
+    if (action) {
+      const tag = document.createElement('span');
+      tag.className = 'msg-action';
+      tag.textContent = action;
+      msg.appendChild(tag);
+    }
+    return msg;
+  }
+
+  // ── Mode toggle ──
+
+  function updateMode() {
+    isLiveMode = document.getElementById('live-toggle').checked;
+    const label = document.getElementById('mode-label');
+    if (isLiveMode) {
+      label.textContent = 'Live Mode';
+      label.className = 'mode-label live';
+    } else {
+      label.textContent = 'Simulation';
+      label.className = 'mode-label sim';
+    }
+  }
 
   function setGoal(text) {
     document.getElementById('goal-input').value = text;
     document.getElementById('goal-input').focus();
   }
 
+  // ── Call flow ──
+
   async function startCall() {
     const input = document.getElementById('goal-input');
     const goal = input.value.trim();
     if (!goal) return;
 
-    // Reset UI
     document.getElementById('call-panel').classList.add('active');
     document.getElementById('result-panel').classList.remove('active');
+    document.getElementById('history-detail').classList.remove('active');
     document.getElementById('examples').style.display = 'none';
-    document.getElementById('transcript').innerHTML = '';
+    document.getElementById('transcript').replaceChildren();
     document.getElementById('send-btn').disabled = true;
 
-    // Start timer
     startTime = Date.now();
     timerInterval = setInterval(updateTimer, 1000);
 
@@ -294,18 +433,16 @@
       const resp = await fetch('/api/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, simulate: true }),
+        body: JSON.stringify({ goal, simulate: !isLiveMode }),
       });
       const data = await resp.json();
       currentCallId = data.callId;
 
-      // Connect SSE
-      eventSource = new EventSource(`/api/call/${currentCallId}/stream`);
-      eventSource.onmessage = (e) => {
-        const event = JSON.parse(e.data);
-        handleEvent(event);
+      eventSource = new EventSource('/api/call/' + currentCallId + '/stream');
+      eventSource.onmessage = function(e) {
+        handleEvent(JSON.parse(e.data));
       };
-      eventSource.onerror = () => {
+      eventSource.onerror = function() {
         if (eventSource) eventSource.close();
       };
     } catch (err) {
@@ -326,33 +463,24 @@
         showResult(event.data);
         break;
       case 'error':
-        addMessage('system', '⚠ ' + event.data.message);
+        addMessage('system', event.data.message);
         break;
     }
   }
 
   function updateStatus(status) {
-    const dot = document.getElementById('status-dot');
-    const text = document.getElementById('status-text');
-    dot.className = 'status-dot ' + status;
-    const labels = {
+    document.getElementById('status-dot').className = 'status-dot ' + status;
+    var labels = {
       preparing: 'Preparing...', dialing: 'Dialing...', ivr: 'Navigating menu...',
       holding: 'On hold...', talking: 'Talking to agent', negotiating: 'Negotiating...',
       success: 'Success!', failed: 'Failed', ended: 'Call ended'
     };
-    text.textContent = labels[status] || status;
+    document.getElementById('status-text').textContent = labels[status] || status;
   }
 
   function addMessage(speaker, text, action) {
-    const transcript = document.getElementById('transcript');
-    const msg = document.createElement('div');
-    msg.className = 'msg';
-    msg.innerHTML = `
-      <div class="msg-label ${speaker}">${speaker.toUpperCase()}</div>
-      <div class="msg-text">${escapeHtml(text)}</div>
-      ${action ? `<span class="msg-action">${escapeHtml(action)}</span>` : ''}
-    `;
-    transcript.appendChild(msg);
+    var transcript = document.getElementById('transcript');
+    transcript.appendChild(createMsgElement(speaker, text, action));
     transcript.scrollTop = transcript.scrollHeight;
   }
 
@@ -360,33 +488,50 @@
     clearInterval(timerInterval);
     if (eventSource) { eventSource.close(); eventSource = null; }
 
-    const panel = document.getElementById('result-panel');
-    const isSuccess = data.status === 'success';
+    var panel = document.getElementById('result-panel');
+    var isSuccess = data.status === 'success';
 
-    panel.className = `result-panel active ${isSuccess ? 'success' : 'failed'}`;
+    panel.className = 'result-panel active ' + (isSuccess ? 'success' : 'failed');
     document.getElementById('result-icon').textContent = isSuccess ? '✓' : '✗';
-    document.getElementById('result-title').textContent = isSuccess ? 'Nope did it.' : 'Didn\'t work this time.';
-    document.getElementById('result-title').style.color = isSuccess ? 'var(--green)' : 'var(--rose)';
+
+    var titleEl = document.getElementById('result-title');
+    titleEl.textContent = isSuccess ? 'Nope did it.' : 'Didn\'t work this time.';
+    titleEl.style.color = isSuccess ? 'var(--green)' : 'var(--rose)';
+
     document.getElementById('result-summary').textContent = data.summary || '';
 
-    const duration = data.duration || Math.round((Date.now() - startTime) / 1000);
-    const mins = Math.floor(duration / 60);
-    const secs = duration % 60;
+    var duration = data.duration || Math.round((Date.now() - startTime) / 1000);
+    var mins = Math.floor(duration / 60);
+    var secs = duration % 60;
 
-    let statsHTML = `
-      <div class="stat"><div class="stat-value">${mins}m ${secs}s</div><div class="stat-label">Duration</div></div>
-      <div class="stat"><div class="stat-value">$${(data.cost?.total || 0).toFixed(3)}</div><div class="stat-label">Cost</div></div>
-    `;
+    var stats = document.getElementById('result-stats');
+    stats.replaceChildren();
+
+    var durationStat = document.createElement('div');
+    durationStat.className = 'stat';
+    durationStat.innerHTML = '<div class="stat-value">' + mins + 'm ' + secs + 's</div><div class="stat-label">Duration</div>';
+    stats.appendChild(durationStat);
+
+    var costStat = document.createElement('div');
+    costStat.className = 'stat';
+    costStat.innerHTML = '<div class="stat-value">$' + (data.cost && data.cost.total || 0).toFixed(3) + '</div><div class="stat-label">Cost</div>';
+    stats.appendChild(costStat);
+
     if (data.savings) {
-      statsHTML += `<div class="stat"><div class="stat-value">${data.savings}%</div><div class="stat-label">Saved</div></div>`;
+      var savStat = document.createElement('div');
+      savStat.className = 'stat';
+      savStat.innerHTML = '<div class="stat-value">' + data.savings + '%</div><div class="stat-label">Saved</div>';
+      stats.appendChild(savStat);
     }
-    document.getElementById('result-stats').innerHTML = statsHTML;
+
     document.getElementById('send-btn').disabled = false;
+    loadHistory();
   }
 
   function resetUI() {
     document.getElementById('call-panel').classList.remove('active');
     document.getElementById('result-panel').classList.remove('active');
+    document.getElementById('history-detail').classList.remove('active');
     document.getElementById('examples').style.display = 'block';
     document.getElementById('goal-input').value = '';
     document.getElementById('goal-input').focus();
@@ -395,28 +540,134 @@
 
   function updateTimer() {
     if (!startTime) return;
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-    const secs = String(elapsed % 60).padStart(2, '0');
-    document.getElementById('call-timer').textContent = `${mins}:${secs}`;
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    var mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    var secs = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('call-timer').textContent = mins + ':' + secs;
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  // ── History ──
+
+  function toggleHistory() {
+    var list = document.getElementById('history-list');
+    var icon = document.getElementById('history-toggle-icon');
+    var isOpen = list.classList.toggle('open');
+    icon.classList.toggle('open', isOpen);
+    if (isOpen) loadHistory();
   }
 
-  // Enter key to send
-  document.getElementById('goal-input').addEventListener('keypress', (e) => {
+  async function loadHistory() {
+    var list = document.getElementById('history-list');
+    try {
+      var resp = await fetch('/api/history');
+      var data = await resp.json();
+      var calls = data.calls || [];
+
+      list.replaceChildren();
+
+      if (calls.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'history-empty';
+        empty.textContent = 'No calls recorded yet.';
+        list.appendChild(empty);
+        return;
+      }
+
+      calls.forEach(function(c) {
+        var date = new Date(c.date);
+        var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        var item = document.createElement('div');
+        item.className = 'history-item';
+        item.setAttribute('data-task-id', c.taskId);
+        item.onclick = function() { showHistoryDetail(c.taskId); };
+
+        var row = document.createElement('div');
+        row.className = 'history-item-row';
+
+        var dot = document.createElement('div');
+        dot.className = 'history-dot ' + c.status;
+        row.appendChild(dot);
+
+        var company = document.createElement('span');
+        company.className = 'history-company';
+        company.textContent = c.company;
+        row.appendChild(company);
+
+        var dateEl = document.createElement('span');
+        dateEl.className = 'history-date';
+        dateEl.textContent = dateStr;
+        row.appendChild(dateEl);
+
+        item.appendChild(row);
+
+        var goal = document.createElement('div');
+        goal.className = 'history-goal';
+        goal.textContent = c.goal;
+        item.appendChild(goal);
+
+        list.appendChild(item);
+      });
+    } catch (e) {
+      list.replaceChildren();
+      var errDiv = document.createElement('div');
+      errDiv.className = 'history-empty';
+      errDiv.textContent = 'Could not load history.';
+      list.appendChild(errDiv);
+    }
+  }
+
+  async function showHistoryDetail(taskId) {
+    var panel = document.getElementById('history-detail');
+    try {
+      var resp = await fetch('/api/history/' + taskId);
+      if (!resp.ok) { panel.classList.remove('active'); return; }
+      var record = await resp.json();
+
+      document.getElementById('detail-title').textContent = record.task.company || 'Call';
+      var date = new Date(record.savedAt).toLocaleString();
+      var mins = Math.floor(record.result.duration / 60);
+      var secs = record.result.duration % 60;
+      document.getElementById('detail-meta').textContent = date + ' · ' + record.result.status + ' · ' + mins + 'm ' + secs + 's';
+
+      var container = document.getElementById('detail-transcript');
+      container.replaceChildren();
+
+      (record.result.transcript || []).forEach(function(entry) {
+        container.appendChild(createMsgElement(entry.speaker, entry.text, entry.action));
+      });
+
+      if (record.result.summary) {
+        var summaryDiv = document.createElement('div');
+        summaryDiv.style.cssText = 'margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.85rem;color:var(--text-dim)';
+        summaryDiv.textContent = record.result.summary;
+        container.appendChild(summaryDiv);
+      }
+
+      panel.classList.add('active');
+    } catch (e) {
+      panel.classList.remove('active');
+    }
+  }
+
+  function closeDetail() {
+    document.getElementById('history-detail').classList.remove('active');
+  }
+
+  // ── Init ──
+
+  document.getElementById('goal-input').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') startCall();
   });
 
-  // Check health
-  fetch('/api/health').then(r => r.json()).then(data => {
-    document.getElementById('mode-label').textContent =
-      data.mode === 'simulation' ? 'Simulation Mode' : 'Live Mode';
-  }).catch(() => {});
+  fetch('/api/health').then(function(r) { return r.json(); }).then(function(data) {
+    if (data.mode === 'live') {
+      document.getElementById('live-toggle').checked = true;
+      updateMode();
+    }
+  }).catch(function() {});
+
+  loadHistory();
 </script>
 
 </body>

@@ -9,7 +9,7 @@ config();
 const chalk = require('chalk');
 const ora = require('ora');
 
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 
 const BANNER = `
   ${chalk.hex('#B5FF4A').bold('NOPE')}${chalk.hex('#71717A')('.')}  ${chalk.dim(`v${VERSION}`)}
@@ -41,7 +41,7 @@ async function main() {
       await handleCompanies();
       break;
     case 'history':
-      await handleHistory();
+      await handleHistory(args.slice(1));
       break;
     default:
       // Treat the entire args as a goal
@@ -49,11 +49,34 @@ async function main() {
   }
 }
 
+function validateEnv(live: boolean): void {
+  const warnings: string[] = [];
+
+  if (live) {
+    if (!process.env.TWILIO_ACCOUNT_SID) warnings.push('TWILIO_ACCOUNT_SID');
+    if (!process.env.TWILIO_AUTH_TOKEN) warnings.push('TWILIO_AUTH_TOKEN');
+    if (!process.env.TWILIO_PHONE_NUMBER) warnings.push('TWILIO_PHONE_NUMBER');
+    if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+      warnings.push('OPENAI_API_KEY or ANTHROPIC_API_KEY');
+    }
+  }
+
+  if (warnings.length > 0) {
+    console.log(chalk.hex('#FF4A6E')(`  ⚠ Missing env vars for ${live ? 'live' : 'simulation'} mode:`));
+    for (const w of warnings) {
+      console.log(chalk.hex('#FF4A6E')(`    - ${w}`));
+    }
+    console.log('');
+  }
+}
+
 async function handleCall(args: string[]) {
   console.log(BANNER);
 
-  const goal = args.filter(a => !a.startsWith('--')).join(' ');
-  const simulate = args.includes('--simulate') || args.includes('-s') || process.env.SIMULATE === 'true';
+  const goal = args.filter(a => !a.startsWith('--') && a !== '-s' && a !== '-l').join(' ');
+  const hasLiveFlag = args.includes('--live') || args.includes('-l');
+  const hasSimFlag = args.includes('--simulate') || args.includes('-s');
+  const simulate = hasLiveFlag ? false : (hasSimFlag || process.env.SIMULATE === 'true');
 
   if (!goal) {
     console.log(chalk.hex('#FF4A6E')('  Error: No goal provided.\n'));
@@ -63,8 +86,12 @@ async function handleCall(args: string[]) {
     return;
   }
 
+  validateEnv(!simulate);
+
   if (simulate) {
     console.log(chalk.dim('  Mode: Simulation (no real call)\n'));
+  } else {
+    console.log(chalk.hex('#FF4A6E').bold('  ⚠ LIVE MODE — This will make a real phone call.\n'));
   }
 
   const { NopeAgent } = await import('./core/agent');
@@ -79,13 +106,13 @@ async function handleCall(args: string[]) {
         currentStatus = event.data.status;
         const statusLabels: Record<string, string> = {
           preparing: chalk.dim('Preparing...'),
-          dialing: chalk.hex('#4AF0FF')('📞 Dialing...'),
-          ivr: chalk.hex('#FBBF24')('🤖 Navigating phone menu...'),
-          holding: chalk.hex('#FBBF24')('⏳ On hold...'),
-          talking: chalk.hex('#B5FF4A')('💬 Talking to agent...'),
-          negotiating: chalk.hex('#FF4A6E')('🔥 Negotiating...'),
-          success: chalk.hex('#B5FF4A')('✓ Success!'),
-          failed: chalk.hex('#FF4A6E')('✗ Failed'),
+          dialing: chalk.hex('#4AF0FF')('Dialing...'),
+          ivr: chalk.hex('#FBBF24')('Navigating phone menu...'),
+          holding: chalk.hex('#FBBF24')('On hold...'),
+          talking: chalk.hex('#B5FF4A')('Talking to agent...'),
+          negotiating: chalk.hex('#FF4A6E')('Negotiating...'),
+          success: chalk.hex('#B5FF4A')('Success!'),
+          failed: chalk.hex('#FF4A6E')('Failed'),
         };
         spinner.text = statusLabels[currentStatus] || currentStatus;
         if (currentStatus === 'success' || currentStatus === 'failed') {
@@ -171,10 +198,81 @@ async function handleCompanies() {
   }
 }
 
-async function handleHistory() {
+async function handleHistory(args: string[]) {
   console.log(BANNER);
   const { CallRecorder } = await import('./core/recorder');
   const recorder = new CallRecorder();
+
+  const subCommand = args[0];
+
+  // ── history show <id> ──
+  if (subCommand === 'show') {
+    const taskId = args[1];
+    if (!taskId) {
+      console.log(chalk.hex('#FF4A6E')('  Error: Missing task ID.\n'));
+      console.log(chalk.dim('  Usage: nope history show <taskId>\n'));
+      return;
+    }
+
+    const record = await recorder.load(taskId);
+    if (!record) {
+      console.log(chalk.hex('#FF4A6E')(`  No record found for "${taskId}".\n`));
+      return;
+    }
+
+    const statusIcon = record.result.status === 'success'
+      ? chalk.hex('#B5FF4A')('✓')
+      : record.result.status === 'partial'
+        ? chalk.hex('#FBBF24')('~')
+        : chalk.hex('#FF4A6E')('✗');
+
+    console.log(`  ${statusIcon} ${chalk.bold(record.task.company || 'Unknown')}  ${chalk.dim(record.task.goal)}`);
+    console.log(`  ${chalk.dim('Date:')} ${new Date(record.savedAt).toLocaleString()}`);
+    console.log(`  ${chalk.dim('Status:')} ${record.result.status}  ${chalk.dim('Duration:')} ${Math.floor(record.result.duration / 60)}m ${record.result.duration % 60}s`);
+    console.log('');
+    console.log(chalk.hex('#27272A')('  ─────────────────────────────────────'));
+    console.log('');
+
+    const speakerColors: Record<string, string> = {
+      nope: '#B5FF4A', agent: '#FF4A6E', ivr: '#FBBF24', system: '#4AF0FF',
+    };
+
+    for (const entry of record.result.transcript) {
+      const color = speakerColors[entry.speaker] || '#A1A1AA';
+      const label = chalk.hex(color).bold(`  ${entry.speaker.toUpperCase().padEnd(7)}`);
+      console.log(`${label} ${chalk.dim(entry.text)}`);
+      if (entry.action) {
+        console.log(`          ${chalk.bgHex('#1E1E23').hex('#71717A')(` ${entry.action} `)}`);
+      }
+    }
+
+    console.log('');
+    if (record.result.summary) {
+      console.log(`  ${chalk.dim('Summary:')} ${record.result.summary}`);
+      console.log('');
+    }
+    return;
+  }
+
+  // ── history clear ──
+  if (subCommand === 'clear') {
+    const readline = await import('readline');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await new Promise<string>(resolve => {
+      rl.question(chalk.hex('#FF4A6E')('  Delete all call records? (y/N) '), resolve);
+    });
+    rl.close();
+
+    if (answer.toLowerCase() === 'y') {
+      const count = await recorder.clear();
+      console.log(chalk.dim(`  Deleted ${count} record${count !== 1 ? 's' : ''}.\n`));
+    } else {
+      console.log(chalk.dim('  Cancelled.\n'));
+    }
+    return;
+  }
+
+  // ── history (list) ──
   const calls = await recorder.list();
 
   if (calls.length === 0) {
@@ -200,10 +298,12 @@ async function handleHistory() {
         ? chalk.hex('#FBBF24')('~')
         : chalk.hex('#FF4A6E')('x');
 
-    console.log(`  ${statusIcon} ${chalk.white(call.company.padEnd(20))} ${chalk.dim(dateStr)} ${chalk.dim(timeStr)}  ${chalk.dim(durationStr)}`);
+    console.log(`  ${statusIcon} ${chalk.white(call.taskId.padEnd(10))} ${chalk.white(call.company.padEnd(20))} ${chalk.dim(dateStr)} ${chalk.dim(timeStr)}  ${chalk.dim(durationStr)}`);
     console.log(`    ${chalk.dim(call.goal)}`);
     console.log('');
   }
+
+  console.log(chalk.dim('  Use "nope history show <id>" to view full transcript.\n'));
 }
 
 function printHelp() {
@@ -213,21 +313,26 @@ function printHelp() {
     ${chalk.hex('#B5FF4A')('nope')} ${chalk.dim('<goal>')}                     Say what you want done
     ${chalk.hex('#B5FF4A')('nope')} call ${chalk.dim('"Cancel my Netflix"')}    Start a call
     ${chalk.hex('#B5FF4A')('nope')} history                       Show past calls
+    ${chalk.hex('#B5FF4A')('nope')} history show ${chalk.dim('<id>')}            View full transcript
+    ${chalk.hex('#B5FF4A')('nope')} history clear                 Delete all records
     ${chalk.hex('#B5FF4A')('nope')} server                        Start web dashboard
     ${chalk.hex('#B5FF4A')('nope')} companies                     List known companies
 
   ${chalk.bold('Options:')}
     --simulate, -s     Run in simulation mode (no real call)
+    --live, -l         Force live mode (real call)
     --version, -v      Show version
     --help, -h         Show this help
 
   ${chalk.bold('Examples:')}
     ${chalk.dim('$')} nope "Cancel my Netflix subscription"
     ${chalk.dim('$')} nope "Résilie mon abonnement Canal+"
+    ${chalk.dim('$')} nope "Cancela mi suscripción de Movistar"
     ${chalk.dim('$')} nope "Negotiate my Comcast bill" --simulate
+    ${chalk.dim('$')} nope "Kündige mein Spotify-Abo"
     ${chalk.dim('$')} nope server
 
-  ${chalk.dim('Docs: https://github.com/nope-ai/nope')}
+  ${chalk.dim('Docs: https://github.com/guillaume-flambard/nope')}
 `);
 }
 
