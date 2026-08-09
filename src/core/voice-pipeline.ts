@@ -23,8 +23,11 @@ export class VoicePipeline {
   constructor(config?: Partial<VoicePipelineConfig>) {
     this.config = {
       sttProvider: config?.sttProvider || (process.env.DEEPGRAM_API_KEY ? 'deepgram' : 'openai'),
-      llmProvider: config?.llmProvider || (process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai'),
-      llmModel: config?.llmModel || 'gpt-4o-mini',
+      llmProvider: config?.llmProvider ||
+        (process.env.GROQ_API_KEY ? 'groq'
+          : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai'),
+      llmModel: config?.llmModel ||
+        (process.env.GROQ_API_KEY ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile') : 'gpt-4o-mini'),
       ttsProvider: config?.ttsProvider || (process.env.ELEVENLABS_API_KEY ? 'elevenlabs' : 'openai'),
       ttsVoice: config?.ttsVoice || 'alloy',
       language: config?.language || 'en',
@@ -86,10 +89,14 @@ export class VoicePipeline {
   async generateResponse(systemPrompt: string, history: Array<{ role: string; content: string }>): Promise<string> {
     const primary = this.config.llmProvider === 'anthropic'
       ? () => this.anthropicGenerate(systemPrompt, history)
-      : () => this.openaiGenerate(systemPrompt, history);
-    const fallback = this.config.llmProvider === 'anthropic'
-      ? () => this.openaiGenerate(systemPrompt, history)
-      : process.env.ANTHROPIC_API_KEY ? () => this.anthropicGenerate(systemPrompt, history) : null;
+      : this.config.llmProvider === 'groq'
+        ? () => this.groqGenerate(systemPrompt, history)
+        : () => this.openaiGenerate(systemPrompt, history);
+    const fallback = this.config.llmProvider === 'groq'
+      ? (process.env.OPENAI_API_KEY ? () => this.openaiGenerate(systemPrompt, history) : null)
+      : this.config.llmProvider === 'anthropic'
+        ? () => this.openaiGenerate(systemPrompt, history)
+        : process.env.ANTHROPIC_API_KEY ? () => this.anthropicGenerate(systemPrompt, history) : null;
 
     try {
       return await withTimeout(primary(), 8_000, 'LLM');
@@ -348,6 +355,25 @@ TACTICS: ${strategy.tactics.join(', ')}
   private async openaiGenerate(systemPrompt: string, history: Array<{ role: string; content: string }>): Promise<string> {
     const { default: OpenAI } = await import('openai');
     const client = new OpenAI();
+    const response = await client.chat.completions.create({
+      model: this.config.llmModel,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...history.map(h => ({ role: h.role as any, content: h.content })),
+      ],
+      max_tokens: 150,
+      temperature: 0.7,
+    });
+    return response.choices[0]?.message?.content || '';
+  }
+
+  private async groqGenerate(systemPrompt: string, history: Array<{ role: string; content: string }>): Promise<string> {
+    // Groq — OpenAI-compatible API, LPU inference (fast). Free tier, no card required.
+    const { default: OpenAI } = await import('openai');
+    const client = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+    });
     const response = await client.chat.completions.create({
       model: this.config.llmModel,
       messages: [
