@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getNaturalProfile, buildNaturalSpeechSection, naturalOpener } from '../natural-speech';
+import { getNaturalProfile, buildNaturalSpeechSection, naturalOpener, planningFiller, hesitationFiller } from '../natural-speech';
 
 describe('natural-speech profiles', () => {
   it('has a full profile for every supported language', () => {
@@ -39,5 +39,26 @@ describe('natural-speech profiles', () => {
     const fr = getNaturalProfile('fr').cultural;
     expect(de.toLowerCase()).toContain('direct');
     expect(fr.toLowerCase()).toContain('diplomatic');
+  });
+});
+
+describe('position-aware fillers (psycholinguistics)', () => {
+  it('planningFiller returns a language-specific opener', () => {
+    expect(planningFiller('en').length).toBeGreaterThan(0);
+    expect(planningFiller('fr')).toBeTruthy();
+    expect(planningFiller('de')).toBeTruthy();
+  });
+
+  it('hesitationFiller differs from planningFiller', () => {
+    const langs = ['en', 'fr', 'es', 'de', 'it'] as const;
+    for (const lang of langs) {
+      expect(hesitationFiller(lang)).toBeTruthy();
+    }
+  });
+
+  it('buildNaturalSpeechSection mentions filler placement at turn start', () => {
+    const en = buildNaturalSpeechSection('en', new Set());
+    expect(en.toLowerCase()).toContain('start of a turn');
+    expect(en.toLowerCase()).toContain('never mid-word');
   });
 });

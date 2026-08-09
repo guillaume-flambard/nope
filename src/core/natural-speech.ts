@@ -147,6 +147,34 @@ export function localFallback(lang: Language): string {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// ── Position-aware fillers (Clark & Fox Tree 2002; Maclay & Osgood 1959) ──
+
+/** Fillers for a longer upcoming utterance (listener-oriented, "um" family). */
+export function planningFiller(lang: Language): string {
+  const byLang: Record<Language, string[]> = {
+    en: ['um', 'well, so', 'let me see'],
+    fr: ['euh', 'ben voyons', 'alors, euh'],
+    es: ['este', 'bueno, pues', 'a ver'],
+    de: ['ähm', 'also, ja', 'hmm'],
+    it: ['ehm', 'allora, ecco', 'vediamo'],
+  };
+  const pool = byLang[lang] || byLang.en;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/** Fillers for a short hesitation mid-planning (speaker-oriented, "uh" family). */
+export function hesitationFiller(lang: Language): string {
+  const byLang: Record<Language, string[]> = {
+    en: ['uh', 'er', 'uh, you know'],
+    fr: ['euh', 'enfin', 'voyons'],
+    es: ['eh', 'digo', 'mire'],
+    de: ['äh', 'na ja', 'so'],
+    it: ['eh', 'cioè', 'boh'],
+  };
+  const pool = byLang[lang] || byLang.en;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 /** Build the per-language "natural speech" block injected into the system prompt. */
 export function buildNaturalSpeechSection(lang: Language, usedFillers: Set<string>): string {
   const p = getNaturalProfile(lang);
@@ -160,6 +188,7 @@ export function buildNaturalSpeechSection(lang: Language, usedFillers: Set<strin
     `NATURAL SPEECH (${lang.toUpperCase()}):`,
     `- Sound like a real person on the phone, NOT written text. Keep turns to 1-2 short sentences.`,
     `- Sprinkle 1-3 natural markers per turn (never forced, never repeated): e.g. "${filler}", "${hedge}", "${disfluency}".`,
+    `- Place fillers at the START of a turn or at clause boundaries (where people plan what to say next) — never mid-word. Use "${hesitationFiller(lang)}" for a short hesitation, "${planningFiller(lang)}" before a longer statement.`,
     `- React briefly first when appropriate: "${reaction}".`,
     `- Close exchanges with a short acknowledgment: "${closer}".`,
     `- Never say the same thing twice — reword every turn.`,
