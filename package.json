@@ -38,7 +38,8 @@
     "test:watch": "vitest",
     "lint": "eslint src/",
     "clean": "rm -rf dist/",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "demo": "bun run scripts/demo-dialogue.ts"
   },
   "dependencies": {
     "@deepgram/sdk": "^5.7.0",
