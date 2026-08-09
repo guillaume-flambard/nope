@@ -22,13 +22,17 @@ export class VoicePipeline {
 
   constructor(config?: Partial<VoicePipelineConfig>) {
     this.config = {
-      sttProvider: config?.sttProvider || (process.env.DEEPGRAM_API_KEY ? 'deepgram' : 'openai'),
+      sttProvider: config?.sttProvider ||
+        (process.env.GROQ_API_KEY ? 'groq'
+          : process.env.DEEPGRAM_API_KEY ? 'deepgram' : 'openai'),
       llmProvider: config?.llmProvider ||
         (process.env.GROQ_API_KEY ? 'groq'
           : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai'),
       llmModel: config?.llmModel ||
         (process.env.GROQ_API_KEY ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile') : 'gpt-4o-mini'),
-      ttsProvider: config?.ttsProvider || (process.env.ELEVENLABS_API_KEY ? 'elevenlabs' : 'openai'),
+      ttsProvider: config?.ttsProvider ||
+        (process.env.GROQ_API_KEY ? 'groq'
+          : process.env.ELEVENLABS_API_KEY ? 'elevenlabs' : 'openai'),
       ttsVoice: config?.ttsVoice || 'alloy',
       language: config?.language || 'en',
     };
@@ -70,10 +74,14 @@ export class VoicePipeline {
   async speechToText(audio: Buffer): Promise<string> {
     const primary = this.config.sttProvider === 'deepgram'
       ? () => this.deepgramSTT(audio)
-      : () => this.openaiSTT(audio);
-    const fallback = this.config.sttProvider === 'deepgram'
-      ? () => this.openaiSTT(audio)
-      : process.env.DEEPGRAM_API_KEY ? () => this.deepgramSTT(audio) : null;
+      : this.config.sttProvider === 'groq'
+        ? () => this.groqSTT(audio)
+        : () => this.openaiSTT(audio);
+    const fallback = this.config.sttProvider === 'groq'
+      ? (process.env.OPENAI_API_KEY ? () => this.openaiSTT(audio) : null)
+      : this.config.sttProvider === 'deepgram'
+        ? () => this.openaiSTT(audio)
+        : process.env.DEEPGRAM_API_KEY ? () => this.deepgramSTT(audio) : null;
 
     try {
       return await withTimeout(primary(), 10_000, 'STT');
@@ -112,10 +120,14 @@ export class VoicePipeline {
   async textToSpeech(text: string): Promise<Buffer | undefined> {
     const primary = this.config.ttsProvider === 'elevenlabs'
       ? () => this.elevenlabsTTS(text)
-      : () => this.openaiTTS(text);
-    const fallback = this.config.ttsProvider === 'elevenlabs'
-      ? () => this.openaiTTS(text)
-      : process.env.ELEVENLABS_API_KEY ? () => this.elevenlabsTTS(text) : null;
+      : this.config.ttsProvider === 'groq'
+        ? () => this.groqTTS(text)
+        : () => this.openaiTTS(text);
+    const fallback = this.config.ttsProvider === 'groq'
+      ? (process.env.OPENAI_API_KEY ? () => this.openaiTTS(text) : null)
+      : this.config.ttsProvider === 'elevenlabs'
+        ? () => this.openaiTTS(text)
+        : process.env.ELEVENLABS_API_KEY ? () => this.elevenlabsTTS(text) : null;
 
     try {
       return await withTimeout(primary(), 10_000, 'TTS');
@@ -329,6 +341,27 @@ TACTICS: ${strategy.tactics.join(', ')}
     return result.text;
   }
 
+  private async groqSTT(audio: Buffer): Promise<string> {
+    // Groq Whisper — OpenAI-compatible transcriptions, free tier
+    const { default: OpenAI, toFile } = await import('openai');
+    const client = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+    });
+
+    const isWav = audio.length > 4 && audio.subarray(0, 4).toString('ascii') === 'RIFF';
+    const filename = isWav ? 'audio.wav' : 'audio.webm';
+    const contentType = isWav ? 'audio/wav' : 'audio/webm';
+
+    const file = await toFile(audio, filename, { type: contentType });
+    const result = await client.audio.transcriptions.create({
+      model: process.env.GROQ_STT_MODEL || 'whisper-large-v3',
+      file,
+      language: this.config.language,
+    });
+    return result.text;
+  }
+
   private async deepgramSTT(audio: Buffer): Promise<string> {
     // Deepgram SDK — detect WAV vs raw PCM
     const { createClient } = await import('@deepgram/sdk' as any);
@@ -411,6 +444,22 @@ TACTICS: ${strategy.tactics.join(', ')}
     const client = new OpenAI();
     const response = await client.audio.speech.create({
       model: 'tts-1',
+      voice: this.config.ttsVoice as any,
+      input: text,
+    });
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+  private async groqTTS(text: string): Promise<Buffer> {
+    // Groq Orpheus — free TTS, OpenAI-compatible /audio/speech
+    const { default: OpenAI } = await import('openai');
+    const client = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+    });
+    const response = await client.audio.speech.create({
+      model: process.env.GROQ_TTS_MODEL || 'canopylabs/orpheus-v1-english',
       voice: this.config.ttsVoice as any,
       input: text,
     });

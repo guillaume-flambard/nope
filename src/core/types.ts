@@ -93,10 +93,10 @@ export interface Strategy {
 
 /** Voice pipeline configuration */
 export interface VoicePipelineConfig {
-  sttProvider: 'openai' | 'deepgram';
+  sttProvider: 'openai' | 'deepgram' | 'groq';
   llmProvider: 'openai' | 'anthropic' | 'groq';
   llmModel: string;
-  ttsProvider: 'openai' | 'elevenlabs';
+  ttsProvider: 'openai' | 'elevenlabs' | 'groq';
   ttsVoice: string;
   language: Language;
 }
