@@ -1,0 +1,37 @@
+import { describe, it, expect } from 'vitest';
+import { stripAudioTags, extractTags, cueCount, renderTagsForTTS, buildAudioTagRule } from '../audio-tags';
+
+describe('audio-tags engine (ElevenLabs cue reverse-engineering)', () => {
+  it('extracts tags from text', () => {
+    expect(extractTags('Oh [sighs], I see [pause].')).toEqual(['[sighs]', '[pause]']);
+  });
+
+  it('counts cues for dosage checks', () => {
+    expect(cueCount('Oh [sighs], well [pause] okay.')).toBe(2);
+    expect(cueCount('Just a normal sentence.')).toBe(0);
+  });
+
+  it('strips tags cleanly', () => {
+    expect(stripAudioTags('Oh [sighs], I see [short pause].')).toBe('Oh, I see.');
+  });
+
+  it('passes tags through for ElevenLabs (native support)', () => {
+    const t = 'Oh, that is nice of you, but... [short pause] I would still like to cancel.';
+    expect(renderTagsForTTS(t, 'elevenlabs')).toBe(t);
+  });
+
+  it('converts pauses to ellipses for non-ElevenLabs TTS', () => {
+    const out = renderTagsForTTS('Oh [short pause] I see.', 'groq');
+    expect(out).not.toContain('[');
+    expect(out).toContain('...');
+  });
+
+  it('builds a language-specific sparse-cue rule', () => {
+    const fr = buildAudioTagRule('fr');
+    expect(fr).toContain('SPARSE AUDIO CUES (FR)');
+    expect(fr).toContain('ONE cue');
+    const en = buildAudioTagRule('en');
+    expect(en).toContain('SPARSE AUDIO CUES (EN)');
+    expect(en).toContain('[short pause]');
+  });
+});

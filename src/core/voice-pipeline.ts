@@ -4,6 +4,7 @@
 
 import { VoicePipelineConfig, Language, Strategy, TranscriptEntry } from './types';
 import { buildNaturalSpeechSection, localFallback } from './natural-speech';
+import { buildAudioTagRule, renderTagsForTTS } from './audio-tags';
 
 // ── Timeout utility ──
 
@@ -122,16 +123,17 @@ export class VoicePipeline {
 
   /** Convert text to speech audio (with timeout + fallback) */
   async textToSpeech(text: string): Promise<Buffer | undefined> {
+    const rendered = renderTagsForTTS(text, this.config.ttsProvider);
     const primary = this.config.ttsProvider === 'elevenlabs'
-      ? () => this.elevenlabsTTS(text)
+      ? () => this.elevenlabsTTS(rendered)
       : this.config.ttsProvider === 'groq'
-        ? () => this.groqTTS(text)
-        : () => this.openaiTTS(text);
+        ? () => this.groqTTS(rendered)
+        : () => this.openaiTTS(rendered);
     const fallback = this.config.ttsProvider === 'groq'
-      ? (process.env.OPENAI_API_KEY ? () => this.openaiTTS(text) : null)
+      ? (process.env.OPENAI_API_KEY ? () => this.openaiTTS(rendered) : null)
       : this.config.ttsProvider === 'elevenlabs'
-        ? () => this.openaiTTS(text)
-        : process.env.ELEVENLABS_API_KEY ? () => this.elevenlabsTTS(text) : null;
+        ? () => this.openaiTTS(rendered)
+        : process.env.ELEVENLABS_API_KEY ? () => this.elevenlabsTTS(rendered) : null;
 
     try {
       return await withTimeout(primary(), 10_000, 'TTS');
@@ -387,6 +389,7 @@ COMPORTAMENTO:
     };
     const rules = rulesMap[lang] || rulesMap.en;
     const naturalBlock = buildNaturalSpeechSection(lang, new Set());
+    const audioTagRule = buildAudioTagRule(lang);
 
     return `${persona}${identityBlock}
 
@@ -394,6 +397,8 @@ GOAL: ${strategy.type}
 ${strategy.systemPrompt}
 
 ${naturalBlock}
+
+${audioTagRule}
 
 ${rules}
 
